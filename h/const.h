@@ -74,6 +74,8 @@
 #define	PGFAULTEXCEPT	  0
 #define GENERALEXCEPT	  1
 
+/* Pcb Constants */
+#define MAXPROC		20
 
 /* operations */
 #define	MIN(A,B)		((A) < (B) ? A : B)

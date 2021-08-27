@@ -72,7 +72,6 @@ typedef struct passupvector {
     unsigned int exception_stackPtr;
 } passupvector_t;
 
-
 #define STATEREGNUM	31
 typedef struct state_t {
 	unsigned int	s_entryHI;
