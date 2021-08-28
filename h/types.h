@@ -51,18 +51,20 @@ typedef struct {
 typedef struct pcb_t {
 	/* Process Queue Fields */
 	struct pcb_t	*p_next,	/*pointer to next entry*/
-			*p_prev,	/*pointer to prev entry*/
+	struct pcb_t	*p_prev,	/*pointer to prev entry*/
 	/*process tree fields */
-			*p_print,
+	struct pcb_t	*p_print,
 			*p_child,
-			*p_sib;
+			*p_next_sib;
+			*p_prev_sib;
 	/*process status info */
 	state_t		p_s;		/* processor state*/
 	cpu_t		p_time;		/*cpu time used by proc*/
 	int		*p_semAdd;	
 	
 	support_t	*p_supportStruct;
-} pcb_t;
+} pcb_t, *pcb_PTR;
+
 
 /* Pass Up Vector */
 typedef struct passupvector {
