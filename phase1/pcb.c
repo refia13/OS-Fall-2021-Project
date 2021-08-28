@@ -12,7 +12,7 @@ void freePcb(pcb_PTR p) {
 	else{ /*Stack is not Empty*/
 	pcb_PTR temp = _h;
 	_h = p;
-	p->p_next = temp;
+	_h->p_next = temp;
 	}
 }
 
