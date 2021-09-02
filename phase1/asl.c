@@ -5,10 +5,18 @@
 
 static semd_PTR semdFree_h; //ASL Free List
 
+void insertSemd(semd_PTR *s) {
+	if(semdFree_h == NULL) {
+		(*semdFree_h) = s;
+	}
+	semdFree_h -> s_next = s;
+}
+
+
 int insertBlocked(int *semAdd, pcb_PTR p) {
-	/*insert the pcb pointed to by p at the tail of the procQ associated with the semaphore 
-	whose address is semAdd. If there is no active semaphore, allocate one from the 
-	semdFreeList, insert it in the ASL at the sorted position and initialize.*/
+	/*insert the pcb pointed to by p at the tail of the procQ associated with the 
+	semaphore whose address is semAdd. If there is no active semaphore, allocate one from 
+	the semdFreeList, insert it in the ASL at the sorted position and initialize.*/
 	
 	
 }
@@ -30,7 +38,7 @@ void initASL() {
 	static semd_t semdTable[MAXPROC];
 	for(int i=0; i<MAXPROC; i++)
 	{
-		
+		insertSemd(semdTable[i];
 	{
 }
 
