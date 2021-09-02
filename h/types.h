@@ -65,7 +65,12 @@ typedef struct pcb_t {
 	support_t	*p_supportStruct;
 } pcb_t, *pcb_PTR;
 
-
+/*semaphore descriptor type*/
+typedef struct semd_t {
+	struct semd_t   *s_next;   /*next element on the ASL*/
+	int 		*s_semAdd; /*pointer tp tje semaphore*/
+	pcb_PTR 	*s_procQ;  /*process queue for the semaphore descriptor */
+} semd_t, *semd_PTR;
 /* Pass Up Vector */
 typedef struct passupvector {
     unsigned int tlb_refll_handler;

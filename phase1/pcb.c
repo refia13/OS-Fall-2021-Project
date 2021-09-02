@@ -116,7 +116,7 @@ pcb_PTR headProcQ(pcb_PTR tp) {
 	return temp;
 }
 
-int emptyChild(pcb_t *p) {
+int emptyChild(pcb_PTR p) {
 	/* Return TRUE if the pcb pointed to by p has no children. Return FALSE otherwise*/
 	if (p.p_child == NULL) {
 		return TRUE;
@@ -125,7 +125,7 @@ int emptyChild(pcb_t *p) {
 	return FALSE;
 }
 
-insertChild(pcb_t *prnt, pcb_t *p) {
+insertChild(pcb_PTR prnt, pcb_PTR p) {
 	/* Make the pcb pointed to by the p a child of the pcb pointed to by prnt*/
 	if (!emptyChild(prnt);) {
 		p->p_next_sib = prnt.p_child;
@@ -136,7 +136,7 @@ insertChild(pcb_t *prnt, pcb_t *p) {
 	prnt->p_child = p;
 }
 
-pcb_t *removeChild(pcb_t *p) {
+pcb_PTR removeChild(pcb_PTR p) {
 	/* Make the first child of the pcb pointed to by p no longer a child of p. Return NULL if initially there were no children of p.
 	Otherwise, return a pointer to this removed first child pcb*/
 	if (emptyChild(p)) {
@@ -148,7 +148,7 @@ pcb_t *removeChild(pcb_t *p) {
 	return temp;
 }
 
-pcb_t *outChild(pcb_t *p) {
+pcb_PTR outChild(pcb_PTR p) {
 	/* Make the pcb pointed to by p no longer the child of its parent. If the pcb has no parent return NULL; otherwise return p.
 	Note that the element pointed to by p need not be the first child of its parent*/
 	if (p.prnt == NULL) {
