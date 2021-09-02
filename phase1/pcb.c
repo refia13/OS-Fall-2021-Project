@@ -2,17 +2,17 @@
 #include "../h/types.h"
 #include "../h/pcb.h"
 
-pcb_PTR pcbList _h; /*Stack of PCBs*/
+static pcb_PTR pcbList_h; /*Stack of PCBs*/
 
 void freePcb(pcb_PTR p) {
 	/*Insert the element pointed to by p onto the pcbFree list. */
-	if(_h == NULL) { /*Stack is Empty*/
-	p -> _h; 
+	if(pcbList_h == NULL) { /*Stack is Empty*/
+	p -> pcbList_h; 
 	}
 	else{ /*Stack is not Empty*/
-	pcb_PTR temp = _h;
-	_h = p;
-	_h->p_next = temp;
+	pcb_PTR temp = pcbList_h;
+	pcbList_h = p;
+	pcbList_h->p_next = temp;
 	}
 }
 
@@ -22,8 +22,8 @@ pcb_PTR allocPcb() {
 	if(_h == NULL) { /*PCB Free List is Empty*/
 		return NULL;
 	}
-	pcb_PTR temp = _h;
-	_h = _h.p_next;
+	pcb_PTR temp = pcbList_h;
+	pcbList_h = pcbList_h.p_next;
 	//temp -> p_next = NULL;
 	return temp;
 }
