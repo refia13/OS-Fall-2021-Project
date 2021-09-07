@@ -51,18 +51,18 @@ typedef struct {
 typedef struct pcb_t {
 	/* Process Queue Fields */
 	struct pcb_t	*p_next,	/*pointer to next entry*/
-	struct pcb_t	*p_prev,	/*pointer to prev entry*/
+	        	*p_prev,	/*pointer to prev entry*/
 	/*process tree fields */
-	struct pcb_t	*p_print,
+	        	*p_prnt,
 			*p_child,
-			*p_next_sib;
+			*p_next_sib,
 			*p_prev_sib;
 	/*process status info */
-	state_t		p_s;		/* processor state*/
+	/*state_t		p_s;		 processor state*/
 	cpu_t		p_time;		/*cpu time used by proc*/
 	int		*p_semAdd;	
 	
-	support_t	*p_supportStruct;
+	/*support_t	*p_supportStruct;*/
 } pcb_t, *pcb_PTR;
 
 /*semaphore descriptor type*/
