@@ -28,10 +28,12 @@ pcb_PTR allocPcb() {
 }
 void initPcbs() {
 	/*initializes pcbFree list*/
-	static pcb_PTR procTable[MAXPROC];
+	static pcb_t procTable[MAXPROC];
 	int i;
+	
+	pcbList_h = NULL;
 	for(i=0; i<MAXPROC; i++) {
-		freePcb((procTable[i]));
+		freePcb(&(procTable[i]));
 	}
 }
 
