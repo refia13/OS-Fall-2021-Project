@@ -4,26 +4,42 @@
 
 static pcb_PTR pcbList_h; /*Stack of PCBs*/
 
+void debugA(int a, int b, int c, int d) {
+	int i;
+	i = 0;
+	i++;
+}
+
 void freePcb(pcb_PTR p) {
 	/*Insert the element pointed to by p onto the pcbFree list. */
 	if(pcbList_h == NULL) { /*Stack is Empty*/
-	pcbList_h = p;
+		pcbList_h = p;
 	}
 	else{ /*Stack is not Empty*/
-	pcbList_h -> p_prev = p;
-	p -> p_next = pcbList_h;
-	pcbList_h = p;
+		pcbList_h -> p_prev = p;
+		p -> p_next = pcbList_h;
+		pcbList_h = p;
 	}
 }
 
 pcb_PTR allocPcb() {
 	/*Return NULL if thje pcbFree list is empty, otherwise remove an element from the pcbFree list and initialize it.*/
-	if(pcbList_h == NULL) { /*PCB Free List is Empty*/
-		return NULL;
+	/*3 Cases, list is empty, list has 2+ before alloc, list has 1 after alloc*/
+	if(pcbList_h == NULL) {
+		return NULL; /*Free List is Empty*/
 	}
-	pcb_PTR temp = pcbList_h;
+	pcb_PTR temp = (pcbList_h);
 	pcbList_h = pcbList_h -> p_next;
-	/*temp -> p_next = NULL;*/
+	if(pcbList_h == temp)
+	{
+		
+		pcbList_h -> p_next = NULL;
+		pcbList_h -> p_prev = NULL;
+		pcbList_h = NULL;
+	}
+	temp -> p_next = NULL;
+	temp -> p_prev = NULL;
+	debugA((int)temp,2,3,4);
 	return temp;
 }
 void initPcbs() {

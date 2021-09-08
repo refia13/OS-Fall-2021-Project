@@ -121,7 +121,11 @@ void adderrbuf(char *strp) {
 	PANIC();
 }
 
-
+void debugB(int a) {
+	int i;
+	i = 0;
+	i++;
+}
 
 void main() {
 	int i;
@@ -130,14 +134,16 @@ void main() {
 
 	/* Check allocProc */
 	for (i = 0; i < MAXPROC; i++) {
+		
 		if ((procp[i] = allocPcb()) == NULL)
 			adderrbuf("allocPcb: unexpected NULL   ");
+		debugB(i);
 	}
+	debugB(400);
 	if (allocPcb() != NULL) {
 		adderrbuf("allocPcb: allocated more than MAXPROC entries   ");
 	}
 	addokbuf("allocPcb ok   \n");
-
 	/* return the last 10 entries back to free list */
 	for (i = 10; i < MAXPROC; i++)
 		freePcb(procp[i]);
