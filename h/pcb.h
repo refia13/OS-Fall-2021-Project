@@ -16,7 +16,7 @@ extern pcb_PTR allocPcb ();
 extern void initPcbs ();
 
 extern pcb_PTR mkEmptyProcQ ();
-extern int emptyProcQ (pcb_PTR *tp);
+extern int emptyProcQ (pcb_PTR tp);
 extern void insertProcQ (pcb_PTR *tp, pcb_PTR p);
 extern pcb_PTR removeProcQ (pcb_PTR *tp);
 extern pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p);

@@ -125,7 +125,6 @@ void adderrbuf(char *strp) {
 
 void main() {
 	int i;
-
 	initPcbs();
 	addokbuf("Initialized process control blocks   \n");
 

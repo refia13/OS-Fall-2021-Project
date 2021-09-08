@@ -7,31 +7,31 @@ static pcb_PTR pcbList_h; /*Stack of PCBs*/
 void freePcb(pcb_PTR p) {
 	/*Insert the element pointed to by p onto the pcbFree list. */
 	if(pcbList_h == NULL) { /*Stack is Empty*/
-	p -> pcbList_h; 
+	pcbList_h = p;
 	}
 	else{ /*Stack is not Empty*/
-	pcb_PTR temp = pcbList_h;
+	pcbList_h -> p_prev = p;
+	p -> p_next = pcbList_h;
 	pcbList_h = p;
-	pcbList_h->p_next = temp;
 	}
 }
 
 pcb_PTR allocPcb() {
 	/*Return NULL if thje pcbFree list is empty, otherwise remove an element from the pcbFree list and initialize it.*/
-	if(_h == NULL) { /*PCB Free List is Empty*/
+	if(pcbList_h == NULL) { /*PCB Free List is Empty*/
 		return NULL;
 	}
 	pcb_PTR temp = pcbList_h;
-	pcbList_h = pcbList_h.p_next;
+	pcbList_h = pcbList_h -> p_next;
 	/*temp -> p_next = NULL;*/
 	return temp;
 }
 void initPcbs() {
 	/*initializes pcbFree list*/
-	static pcb_t procTable[MAXPROC];
-	
+	static pcb_PTR procTable[MAXPROC];
+	int i;
 	for(i=0; i<MAXPROC; i++) {
-		freePcb(&(procTable[i]));
+		freePcb((procTable[i]));
 	}
 }
 
@@ -51,53 +51,59 @@ void insertProcQ(pcb_PTR *tp, pcb_PTR p) {
 	/*store head pointer
 	tp.next = p
 	p.next = head*/
-	pcb_PTR headTemp = &(tp.p_next);
-	&(tp) -> p_next = p;
-	p -> p_next = headTemp;
-	tp = &(p);
+	
+	/*procQ is empty*/
+	if(emptyProcQ(*tp)) {
+		*tp = p;
+	}
+	else {
+		(*tp) -> p_next = p;
+		p -> p_prev = *tp;
+	}
 }
 
 pcb_PTR removeProcQ(pcb_PTR *tp) {
 	/*Remove the first element from the queue whose tail pointer is tp.
 	if the queue is empty return NULL, otherwise return a pointer
 	to the pcb that was removed. Update tp if necessary */
-	if(emptyProcQ(tp)) {
+	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
-	pcb_PTR headTemp = &(tp.p_next);
-	pcb_PTR newHead = headTemp.p_next;
-	&(tp) -> p_next = newHead;
+	pcb_PTR headTemp = (*tp);
+	(*tp) = (*tp) -> p_next;
+	(*tp) -> p_prev = headTemp -> p_prev;
+	
 	return headTemp;
 	
 }
 
 pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	/*Remove the pcb pointed to by p from the queue pointed to by the tail pointer tp. Return NULL if the desired pcb is not in the given queue, otherwise return p. Note that p can point to any pcb in the queue. */
-	if(emptyProcQ(tp)) {
+	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
 	/*temp = NULL
 	loop starts at head
 	while(temp == NULL || &(temp) != tail)*/
 	pcb_PTR temp = NULL;
-	pcb_PTR current = tp.p_next;
-	while(temp == NULL && &(temp) != &(tp))
+	pcb_PTR current = (*tp) -> p_next;
+	while((temp == NULL) && ((temp) != (*tp)))
 	{
 		if(current == p)
 		{
-			temp = &(p);
+			temp = (p);
 		}
-		current = current.p_next;
+		current = current -> p_next;
 	}
 	if(temp != NULL)
 	{
 		/*remove it from the q
 		previous.next = temp.next;
 		next.previous = temp.previous;*/
-		pcb_PTR tempPrev = temp.p_prev;
-		pcb_PTR tempNext = temp.p_next;
-		tempPrev -> p_next = &(tempNext);
-		tempNext -> p_prev = &(tempPrev);
+		pcb_PTR tempPrev = temp -> p_prev;
+		pcb_PTR tempNext = temp -> p_next;
+		tempPrev -> p_next = (tempNext);
+		tempNext -> p_prev = (tempPrev);
 	}
 	return temp; /*return temp, either null or equal to the pointer p*/
 
@@ -106,7 +112,7 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 pcb_PTR headProcQ(pcb_PTR tp) {
 	/*Return a pointer to the first pcb from the queue pointed to by the tail pointer tp. Do not remove this pcb from the queue. Return NULL if the queue is empty*/
 	pcb_PTR temp;
-	temp = tp.p_next;
+	temp = tp -> p_next;
 	return temp;
 }
 
@@ -115,7 +121,7 @@ int emptyChild(pcb_PTR p) {
 	return(p->p_child == NULL);
 }
 
-insertChild(pcb_PTR prnt, pcb_PTR p) {
+void insertChild(pcb_PTR prnt, pcb_PTR p) {
 	/* Make the pcb pointed to by the p a child of the pcb pointed to by prnt*/
 	if (!emptyChild(prnt)) {
 		p->p_next_sib = prnt->p_child;
@@ -130,9 +136,8 @@ pcb_PTR removeChild(pcb_PTR p) {
 	if (emptyChild(p)) {
 		return NULL;
 	}
-
-	temp = p.p_child;
-	p->p_child = temp.p_next_sib;
+	pcb_PTR temp = p -> p_child;
+	p->p_child = temp -> p_next_sib;
 	return temp;
 }
 

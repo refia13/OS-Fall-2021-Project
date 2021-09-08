@@ -85,7 +85,7 @@ pcb_PTR removeBlocked(int *semAdd) {
 	}
 	/*Case 2: temp's semAdd == semAdd parameter*/
 	pcb_PTR tempPCB = removeProcQ(temp->s_procQ);
-	if(tempPCB == NULL || emptyProcQ(temp->s_procQ)) 
+	if(tempPCB == NULL || emptyProcQ(*(temp->s_procQ))) 
 	{
 		/*deallocate semAdd*/
 		semdDealloc(temp);
@@ -115,7 +115,7 @@ pcb_PTR headBlocked(int *semAdd) {
 		return NULL;
 	}
 	/*Case 2: semAdd's procQ is empty*/
-	if(emptyProcQ(temp -> s_procQ))
+	if(emptyProcQ(*(temp -> s_procQ)))
 	{
 		return NULL;
 	}
@@ -131,11 +131,14 @@ void initASL() {
 	{
 		insertSemd(semdTable[i]);
 	}
-	semd_PTR dummyTemp1;
-	semd_PTR dummyTemp2;
+	semd_PTR dummyTemp1 = NULL;
+	dummyTemp1 -> s_next = NULL;
+	dummyTemp1 -> s_semAdd = 0;
+	semd_PTR dummyTemp2 = NULL;
+	dummyTemp2 -> s_next = NULL;
+	dummyTemp2 -> s_semAdd = NULL;
 	semd_h = dummyTemp1;
 	semd_h -> s_next = dummyTemp2;
-	semd_h -> s_semAdd = 0;
-	semd_h -> s_next -> s_semAdd = NULL;
+	
 }
 
