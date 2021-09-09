@@ -1,2 +1,5 @@
 Initialized process control blocks   
-kernel panic()
+allocPcb ok   
+freed 10 entries   
+Inserting...   
+inserted 10 elements   

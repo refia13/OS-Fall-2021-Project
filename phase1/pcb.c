@@ -12,34 +12,19 @@ void debugA(int a, int b, int c, int d) {
 
 void freePcb(pcb_PTR p) {
 	/*Insert the element pointed to by p onto the pcbFree list. */
-	if(pcbList_h == NULL) { /*Stack is Empty*/
-		pcbList_h = p;
-	}
-	else{ /*Stack is not Empty*/
-		pcbList_h -> p_prev = p;
-		p -> p_next = pcbList_h;
-		pcbList_h = p;
-	}
+	insertProcQ(&pcbList_h, p);
 }
 
 pcb_PTR allocPcb() {
 	/*Return NULL if thje pcbFree list is empty, otherwise remove an element from the pcbFree list and initialize it.*/
 	/*3 Cases, list is empty, list has 2+ before alloc, list has 1 after alloc*/
-	if(pcbList_h == NULL) {
-		return NULL; /*Free List is Empty*/
+	pcb_PTR temp = removeProcQ(&pcbList_h);
+	
+	if(pcbList_h != NULL) {
+		temp -> p_next = NULL;
+		temp -> p_prev = NULL;
+		temp -> p_semAdd = NULL;
 	}
-	pcb_PTR temp = (pcbList_h);
-	pcbList_h = pcbList_h -> p_next;
-	if(pcbList_h == temp)
-	{
-		
-		pcbList_h -> p_next = NULL;
-		pcbList_h -> p_prev = NULL;
-		pcbList_h = NULL;
-	}
-	temp -> p_next = NULL;
-	temp -> p_prev = NULL;
-	debugA((int)temp,2,3,4);
 	return temp;
 }
 void initPcbs() {
@@ -47,7 +32,7 @@ void initPcbs() {
 	static pcb_t procTable[MAXPROC];
 	int i;
 	
-	pcbList_h = NULL;
+	pcbList_h = mkEmptyProcQ();
 	for(i=0; i<MAXPROC; i++) {
 		freePcb(&(procTable[i]));
 	}
@@ -72,11 +57,18 @@ void insertProcQ(pcb_PTR *tp, pcb_PTR p) {
 	
 	/*procQ is empty*/
 	if(emptyProcQ(*tp)) {
-		*tp = p;
+		p -> p_next = p;
+		p -> p_prev = p;
+		(*tp) = p;
 	}
-	else {
-		(*tp) -> p_next = p;
-		p -> p_prev = *tp;
+	else
+	{
+		pcb_PTR temp = *tp;
+		(*tp) = p;
+		p -> p_next = temp -> p_next;
+		temp -> p_next = p;
+		p-> p_prev = temp;
+		p-> p_next -> p_prev = p;
 	}
 }
 
@@ -87,10 +79,14 @@ pcb_PTR removeProcQ(pcb_PTR *tp) {
 	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
-	pcb_PTR headTemp = (*tp);
-	(*tp) = (*tp) -> p_next;
-	(*tp) -> p_prev = headTemp -> p_prev;
+	pcb_PTR headTemp = (*tp)->p_next;
+	(*tp)->p_next = headTemp->p_next;
+	(*tp)->p_next->p_prev = (*tp);
 	
+	if(headTemp == (*tp))
+	{
+		(*tp) = mkEmptyProcQ();
+	}
 	return headTemp;
 	
 }
@@ -100,30 +96,7 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
-	/*temp = NULL
-	loop starts at head
-	while(temp == NULL || &(temp) != tail)*/
-	pcb_PTR temp = NULL;
-	pcb_PTR current = (*tp) -> p_next;
-	while((temp == NULL) && ((temp) != (*tp)))
-	{
-		if(current == p)
-		{
-			temp = (p);
-		}
-		current = current -> p_next;
-	}
-	if(temp != NULL)
-	{
-		/*remove it from the q
-		previous.next = temp.next;
-		next.previous = temp.previous;*/
-		pcb_PTR tempPrev = temp -> p_prev;
-		pcb_PTR tempNext = temp -> p_next;
-		tempPrev -> p_next = (tempNext);
-		tempNext -> p_prev = (tempPrev);
-	}
-	return temp; /*return temp, either null or equal to the pointer p*/
+	
 
 }
 

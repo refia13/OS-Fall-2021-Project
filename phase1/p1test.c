@@ -137,7 +137,6 @@ void main() {
 		
 		if ((procp[i] = allocPcb()) == NULL)
 			adderrbuf("allocPcb: unexpected NULL   ");
-		debugB(i);
 	}
 	debugB(400);
 	if (allocPcb() != NULL) {
