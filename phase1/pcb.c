@@ -96,7 +96,24 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
+	pcb_PTR current;
+	current = (*tp) -> p_next;
 	
+	if((current == *tp) && (current != p))
+	{
+		return NULL;
+	}
+	while((current != *tp) && (current != p))
+	{
+		if(current == p)
+		{
+			(*tp) -> p_next = current->p_next;
+			(*tp) -> p_next -> p_prev = *tp;
+			return current;
+		}
+		current = current -> p_next;
+	}
+	return NULL;
 
 }
 

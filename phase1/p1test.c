@@ -138,7 +138,6 @@ void main() {
 		if ((procp[i] = allocPcb()) == NULL)
 			adderrbuf("allocPcb: unexpected NULL   ");
 	}
-	debugB(400);
 	if (allocPcb() != NULL) {
 		adderrbuf("allocPcb: allocated more than MAXPROC entries   ");
 	}
@@ -171,12 +170,14 @@ void main() {
 		insertProcQ(&qa, q);
 	}
 	addokbuf("inserted 10 elements   \n");
+	debugB(300);
 
 	if (emptyProcQ(qa)) adderrbuf("emptyProcQ: unexpected TRUE"   );
-
+	debugB(400);
 	/* Check outProc and headProc */
 	if (headProcQ(qa) != firstproc)
 		adderrbuf("headProcQ failed   ");
+	debugB(900);
 	q = outProcQ(&qa, firstproc);
 	if (q == NULL || q != firstproc)
 		adderrbuf("outProcQ failed on first entry   ");
