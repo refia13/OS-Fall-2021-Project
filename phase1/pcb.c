@@ -59,12 +59,12 @@ void insertProcQ(pcb_PTR *tp, pcb_PTR p) {
 	if(emptyProcQ(*tp)) {
 		p -> p_next = p;
 		p -> p_prev = p;
-		(*tp) = p;
+		*tp = p;
 	}
 	else
 	{
 		pcb_PTR temp = *tp;
-		(*tp) = p;
+		*tp = p;
 		p -> p_next = temp -> p_next;
 		temp -> p_next = p;
 		p-> p_prev = temp;
@@ -87,6 +87,8 @@ pcb_PTR removeProcQ(pcb_PTR *tp) {
 	{
 		(*tp) = mkEmptyProcQ();
 	}
+	
+	/*pcb_PTR headTemp = outProcQ(tail,tail->next);*/
 	return headTemp;
 	
 }
@@ -96,22 +98,32 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
-	pcb_PTR current;
-	current = (*tp) -> p_next;
+	pcb_PTR current = (*tp)->p_next;
 	
-	if((current == *tp) && (current != p))
+	if((current) == (p))
 	{
-		return NULL;
+		(*tp) -> p_next -> p_prev = (*tp) -> p_prev;
+		(*tp) -> p_prev -> p_next = (*tp) -> p_next;
+		(*tp) = (*tp) -> p_prev;
+		return current;
 	}
-	while((current != *tp) && (current != p))
+	else
 	{
-		if(current == p)
-		{
-			(*tp) -> p_next = current->p_next;
-			(*tp) -> p_next -> p_prev = *tp;
-			return current;
+		int i;
+		for(i=0; i<MAXPROC; i++) {
+			pcb_PTR currentNext;
+			currentNext = current -> p_next;
+			current = &currentNext;
+			if((current) == p)
+			{
+				debugA(8,0,0,8);
+				current -> p_prev -> p_next = current -> p_next;
+				current -> p_next -> p_prev = current -> p_prev;
+				return current;
+			}
 		}
-		current = current -> p_next;
+		
+		debugA(4,3,2,1);
 	}
 	return NULL;
 

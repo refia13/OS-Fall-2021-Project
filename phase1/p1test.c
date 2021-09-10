@@ -170,10 +170,8 @@ void main() {
 		insertProcQ(&qa, q);
 	}
 	addokbuf("inserted 10 elements   \n");
-	debugB(300);
 
 	if (emptyProcQ(qa)) adderrbuf("emptyProcQ: unexpected TRUE"   );
-	debugB(400);
 	/* Check outProc and headProc */
 	if (headProcQ(qa) != firstproc)
 		adderrbuf("headProcQ failed   ");
