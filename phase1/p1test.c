@@ -175,7 +175,6 @@ void main() {
 	/* Check outProc and headProc */
 	if (headProcQ(qa) != firstproc)
 		adderrbuf("headProcQ failed   ");
-	debugB(900);
 	q = outProcQ(&qa, firstproc);
 	if (q == NULL || q != firstproc)
 		adderrbuf("outProcQ failed on first entry   ");
@@ -269,6 +268,7 @@ void main() {
 			adderrbuf("insertBlocked(2): unexpected TRUE   ");
 	}
 
+	
 	/* check if semaphore descriptors are returned to free list */
 	p = removeBlocked(&sem[11]);
 	if (insertBlocked(&sem[11],p))
@@ -276,7 +276,7 @@ void main() {
 
 	if (insertBlocked(&onesem, procp[9]) == FALSE)
 		adderrbuf("insertBlocked: inserted more than MAXPROC   ");
-	
+	debugB(99999999);
 	addokbuf("removeBlocked test started   \n");
 	for (i = 10; i< MAXPROC; i++) {
 		q = removeBlocked(&sem[i]);

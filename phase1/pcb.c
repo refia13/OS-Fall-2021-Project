@@ -24,6 +24,10 @@ pcb_PTR allocPcb() {
 		temp -> p_next = NULL;
 		temp -> p_prev = NULL;
 		temp -> p_semAdd = NULL;
+		temp -> p_child = NULL;
+		temp -> p_prnt = NULL;
+		temp -> p_next_sib = NULL;
+		temp -> p_prev_sib = NULL;
 	}
 	return temp;
 }
@@ -51,10 +55,6 @@ int emptyProcQ(pcb_PTR tp) {
 
 void insertProcQ(pcb_PTR *tp, pcb_PTR p) {
 	/*Insert the pcb pointed to by p into the process queue whose tail pointer is pointed to by tp.*/
-	/*store head pointer
-	tp.next = p
-	p.next = head*/
-	
 	/*procQ is empty*/
 	if(emptyProcQ(*tp)) {
 		p -> p_next = p;
@@ -102,28 +102,25 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	
 	if((current) == (p))
 	{
-		(*tp) -> p_next -> p_prev = (*tp) -> p_prev;
-		(*tp) -> p_prev -> p_next = (*tp) -> p_next;
-		(*tp) = (*tp) -> p_prev;
+		pcb_PTR headNext = current -> p_next;
+		(*tp) -> p_next = headNext;
+		headNext -> p_prev = (*tp);
 		return current;
 	}
 	else
 	{
 		int i;
 		for(i=0; i<MAXPROC; i++) {
-			pcb_PTR currentNext;
-			currentNext = current -> p_next;
-			current = &currentNext;
+			
 			if((current) == p)
 			{
-				debugA(8,0,0,8);
 				current -> p_prev -> p_next = current -> p_next;
 				current -> p_next -> p_prev = current -> p_prev;
 				return current;
 			}
+			current = current->p_next;
 		}
 		
-		debugA(4,3,2,1);
 	}
 	return NULL;
 
@@ -138,17 +135,21 @@ pcb_PTR headProcQ(pcb_PTR tp) {
 
 int emptyChild(pcb_PTR p) {
 	/* Return TRUE if the pcb pointed to by p has no children. Return FALSE otherwise*/
-	return(p->p_child == NULL);
+	return(((p->p_child) == NULL));
 }
 
 void insertChild(pcb_PTR prnt, pcb_PTR p) {
 	/* Make the pcb pointed to by the p a child of the pcb pointed to by prnt*/
-	if (!emptyChild(prnt)) {
-		p->p_next_sib = prnt->p_child;
+	pcb_PTR newSib;
+	if(!emptyChild(prnt))
+	{
+		newSib = prnt->p_child;
+		p->p_next_sib = newSib;
+		newSib -> p_prev_sib = p;
+		
 	}
-
-	p->p_prnt = prnt;
 	prnt->p_child = p;
+	p-> p_prnt=p;
 }
 
 pcb_PTR removeChild(pcb_PTR p) {
@@ -163,16 +164,25 @@ pcb_PTR removeChild(pcb_PTR p) {
 
 pcb_PTR outChild(pcb_PTR p) {
 	/* Make the pcb pointed to by p no longer the child of its parent. If the pcb has no parent return NULL; otherwise return p. Note that the element pointed to by p need not be the first child of its parent*/
-	if (p->p_prnt == NULL) {
+	debugA((int)p->p_prnt,2,3,4);
+	if ((p->p_prnt) == NULL) {
+		debugA(1,2,3,4);
 		return NULL;
 	}
 
-	pcb_PTR prev_sib_temp = p->p_prev_sib;
-	pcb_PTR next_sib_temp = p->p_next_sib;
-
-	prev_sib_temp->p_next_sib = next_sib_temp; 
-	next_sib_temp->p_prev_sib = prev_sib_temp;
-	p->p_prnt = NULL;
-
+	pcb_PTR prevTemp = p->p_prev_sib;
+	pcb_PTR nextTemp = p->p_next_sib;
+	
+	if((prevTemp != NULL))
+	{
+		prevTemp -> p_next_sib = nextTemp;
+		
+	}
+	if((nextTemp != NULL))
+	{
+		nextTemp -> p_prev_sib = prevTemp;
+		
+	}
+	
 	return p;
 }
