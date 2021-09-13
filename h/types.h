@@ -69,7 +69,7 @@ typedef struct pcb_t {
 typedef struct semd_t {
 	struct semd_t   *s_next;   /*next element on the ASL*/
 	int 		*s_semAdd; /*pointer tp tje semaphore*/
-	pcb_PTR 	*s_procQ;  /*process queue for the semaphore descriptor */
+	pcb_PTR 	s_procQ;  /*process queue for the semaphore descriptor */
 } semd_t, *semd_PTR;
 /* Pass Up Vector */
 typedef struct passupvector {
