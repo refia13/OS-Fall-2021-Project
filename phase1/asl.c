@@ -29,21 +29,18 @@ semd_PTR semdAlloc() { /*Helper method that allocates a semaphore descriptor fro
 		return NULL;
 	}
 	semd_PTR temp = semdFree_h;
-	semdFree_h = temp->s_next;
+	semdFree_h = semdFree_h->s_next;
 	temp -> s_next = NULL;
 	temp -> s_semAdd = NULL;
 	temp -> s_procQ = NULL;
+	debugC((int)temp,9,9);
 	return temp;
 }
 
 void semdDealloc(semd_PTR toBeRemoved, semd_PTR prnt) {
 	/*Helper method that removes the semaphore descriptor pointed to by s from the active list and pushes it onto the free list. */
 	prnt -> s_next = toBeRemoved -> s_next;
-	
-	semd_PTR temp = semdFree_h;
-	
-	toBeRemoved -> s_next = temp;
-	
+	toBeRemoved -> s_next = semdFree_h;
 	semdFree_h = toBeRemoved;
 	
 }
@@ -81,30 +78,30 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
 		return TRUE;
 	}
 	
-	if((temp -> s_semAdd) == semAdd)
+	if((temp -> s_next -> s_semAdd) == semAdd)
 	{
 		
-		insertProcQ((temp -> s_procQ), p);
+		insertProcQ(&(temp -> s_next -> s_procQ), p);
 		return FALSE;
 	} 
 	else
 	{
 		semd_PTR newSemd = semdAlloc();
+		debugC((int)newSemd,7,7);
 		if(newSemd == NULL)
 		{
 			return TRUE;
 		}
-		
-		newSemd -> s_next = temp -> s_next;
+		semd_PTR tempNext = temp -> s_next;
+		temp -> s_next = newSemd;
+		newSemd -> s_next = tempNext;
 		
 		newSemd -> s_semAdd = semAdd;
 		
-		newSemd -> s_procQ = &p;
-		
-		temp -> s_next = newSemd;
-	
+		insertProcQ(&(newSemd->s_procQ),p);
+		debugC((int)temp,8,8);
+		return FALSE;
 	}
-	return FALSE;
 }
 
 pcb_PTR removeBlocked(int *semAdd) {
@@ -118,9 +115,13 @@ pcb_PTR removeBlocked(int *semAdd) {
 		return NULL;
 	}
 	
-	pcb_PTR tempPcb = removeProcQ(tempChld->s_procQ);
-	
-	if(emptyProcQ(*tempChld->s_procQ))
+	pcb_PTR tempPcb = removeProcQ(&(tempChld->s_procQ));
+	debugC((int)tempPcb,3,4);
+	if(tempPcb == NULL)
+	{
+		semdDealloc(tempPrnt, tempChld);
+	}
+	if(emptyProcQ((tempChld->s_procQ)))
 	{
 		semdDealloc(tempPrnt, tempChld);
 	}
@@ -138,7 +139,7 @@ pcb_PTR outBlocked(pcb_PTR p) {
 		return NULL;
 	}
 	/*Semaphore Address is on the ASL*/
-	return outProcQ((search -> s_procQ), p);
+	return outProcQ(&(search -> s_procQ), p);
 }
 
 pcb_PTR headBlocked(int *semAdd) {
@@ -150,12 +151,12 @@ pcb_PTR headBlocked(int *semAdd) {
 		return NULL;
 	}
 	/*Case 2: semAdd's procQ is empty*/
-	if(emptyProcQ(*(temp -> s_procQ)))
+	if(emptyProcQ((temp -> s_procQ)))
 	{
 		return NULL;
 	}
 	/*Case 3: not empty*/
-	return headProcQ(*(temp -> s_procQ));
+	return headProcQ((temp -> s_procQ));
 }
 
 void initASL() {
