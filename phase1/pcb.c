@@ -18,6 +18,11 @@ void freePcb(pcb_PTR p) {
 pcb_PTR allocPcb() {
 	/*Return NULL if thje pcbFree list is empty, otherwise remove an element from the pcbFree list and initialize it.*/
 	/*3 Cases, list is empty, list has 2+ before alloc, list has 1 after alloc*/
+	if(pcbList_h == NULL)
+	{
+		return NULL; /*Free List is already empty*/
+	}
+	
 	pcb_PTR temp = removeProcQ(&pcbList_h);
 	
 	if(pcbList_h != NULL) {

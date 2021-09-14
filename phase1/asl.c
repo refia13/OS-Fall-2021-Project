@@ -60,35 +60,49 @@ void semdDealloc(semd_PTR s) {
 int insertBlocked(int *semAdd, pcb_PTR p) {
 	/*insert the pcb pointed to by p at the tail of the procQ associated with the semaphore whose address is semAdd. If there is no active semaphore, allocate one from the semdFreeList, insert it in the ASL at the sorted position and initialize.*/
 	semd_PTR temp = traverseASL(semAdd);
+	
 	if((temp -> s_next -> s_semAdd) == semAdd)
 	{
-		insertProcQ(&(temp -> s_next -> s_procQ), p);
-		return FALSE;
+		debugC((int)temp,(int)temp->s_next,(int)temp->s_next->s_procQ);
+		temp = temp -> s_next;
+		insertProcQ(&(temp -> s_procQ), p);
+		
 	} 
 	else
 	{
 		semd_PTR newSemd = semdAlloc();
+		
 		if(newSemd == NULL)
 			return TRUE;
 		newSemd -> s_next = temp -> s_next;
+		
 		newSemd -> s_semAdd = semAdd;
+		
+		p->p_semAdd = semAdd;
+		
 		insertProcQ(&(newSemd->s_procQ),p);
 		temp -> s_next = newSemd;
+		
 		return FALSE;
 	}
+	debugC(0,0,0);
+	return FALSE;
 }
 
 pcb_PTR removeBlocked(int *semAdd) {
 	/*Search the ASL for the semaphore descriptor pointed to by semAdd, if none is found Return NULL; otherwise remove the head pcb from the process queue of the found semaphore descriptor and return a pointer to it. If the procQ for the semaphore descriptor becomes empty, remove the semd from the ASL and return it to the free List.*/
 	
 	semd_PTR temp = traverseASL(semAdd);
-	if(temp -> s_semAdd != semAdd)
+	
+	if(*(temp -> s_semAdd) != *semAdd)
 	{
 		return NULL;
 	}
 	pcb_PTR tempPCB = removeProcQ(&(temp->s_procQ));
-	if(tempPCB == NULL && emptyProcQ((temp->s_procQ)))
+	
+	if(tempPCB == NULL || emptyProcQ((temp->s_procQ)))
 	{
+		
 		semdDealloc(temp);
 	}
 	return tempPCB;
@@ -96,22 +110,25 @@ pcb_PTR removeBlocked(int *semAdd) {
 
 pcb_PTR outBlocked(pcb_PTR p) {
 	/*remove the pcb pointed to by p from the procQ associated with p's semAdd on the ASL, if p's semAdd does not appear on the ASL, return NULL, otherwise return p */
-	int *tempAdd = p -> p_semAdd;
-	semd_PTR search = traverseASL(tempAdd);
-	if(search == NULL || search -> s_semAdd < tempAdd)
+	int *semAdd = p -> p_semAdd;
+	semd_PTR temp = traverseASL(semAdd);
+	if(temp -> s_semAdd != semAdd)
 	{
-		/*semaphore address does not appear on the ASL*/
 		return NULL;
 	}
-	/*Semaphore Address is on the ASL*/
-	return outProcQ(&(search -> s_procQ), p);
+	pcb_PTR tempPCB = outProcQ(&(temp->s_procQ),p);
+	if(tempPCB == NULL && emptyProcQ((temp->s_procQ)))
+	{
+		semdDealloc(temp);
+	}
+	return tempPCB;
 }
 
 pcb_PTR headBlocked(int *semAdd) {
 	/*Return a pointer to the pcb that is at the head of the procQ associated with the semAdd. Return NULL if semAdd is not on the ASL or if the procQ associated with the ASL is empty*/
 	semd_PTR temp = traverseASL(semAdd);
 	/*Case 1: SemAdd is not on the ASL*/
-	if(temp -> s_semAdd != semAdd)
+	if((temp -> s_semAdd) != semAdd)
 	{
 		return NULL;
 	}
@@ -140,7 +157,7 @@ void initASL() {
 	dummyTemp2 -> s_semAdd = (int *)INT_MAX;
 	dummyTemp2 -> s_next = NULL;
 	semd_h -> s_next = dummyTemp2;
-	debugC((int)semd_h -> s_next,100,100);
+	
 	
 }
 

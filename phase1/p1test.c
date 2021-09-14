@@ -268,16 +268,18 @@ void main() {
 			adderrbuf("insertBlocked(2): unexpected TRUE   ");
 	}
 
-	debugB(8);
+	
 	/* check if semaphore descriptors are returned to free list */
 	p = removeBlocked(&sem[11]);
-	debugB(9);
+	debugB((int)p);
 	if (insertBlocked(&sem[11],p))
 		adderrbuf("removeBlocked: fails to return to free list   ");
-
-	if (insertBlocked(&onesem, procp[9]) == FALSE)
+	debugB(420);
+	if (insertBlocked(&onesem, procp[9]) == FALSE) /*DBE Error is currently happening with this call*/	{
+		debugB(69);
 		adderrbuf("insertBlocked: inserted more than MAXPROC   ");
-	debugB(99999999);
+	}
+	debugB(8008);
 	addokbuf("removeBlocked test started   \n");
 	for (i = 10; i< MAXPROC; i++) {
 		q = removeBlocked(&sem[i]);
