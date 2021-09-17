@@ -121,7 +121,7 @@ void adderrbuf(char *strp) {
 	PANIC();
 }
 
-void debugB(int a) {
+void debugB(int a, int b) {
 	int i;
 	i = 0;
 	i++;
@@ -271,15 +271,15 @@ void main() {
 	
 	/* check if semaphore descriptors are returned to free list */
 	p = removeBlocked(&sem[11]);
-	debugB((int)p);
+	
 	if (insertBlocked(&sem[11],p))
 		adderrbuf("removeBlocked: fails to return to free list   ");
-	debugB(230);
+	
 	if (insertBlocked(&onesem, procp[9]) == FALSE) 
 	{
 		adderrbuf("insertBlocked: inserted more than MAXPROC   ");
 	}
-	debugB(8008);
+	
 	addokbuf("removeBlocked test started   \n");
 	for (i = 10; i< MAXPROC; i++) {
 		q = removeBlocked(&sem[i]);
@@ -304,11 +304,13 @@ void main() {
 	if (p != q)
 		adderrbuf("outBlocked(1): couldn't remove from valid queue   ");
 	q = headBlocked(&sem[9]);
+	debugB((int)q,100);
 	if (q == NULL)
 		adderrbuf("headBlocked(2): NULL for an existent queue   ");
 	if (q != procp[19])
 		adderrbuf("headBlocked(2): wrong process returned   ");
 	p = outBlocked(q);
+	debugB((int)p,200);
 	if (p != q)
 		adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
 	p = outBlocked(q);
