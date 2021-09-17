@@ -274,9 +274,9 @@ void main() {
 	debugB((int)p);
 	if (insertBlocked(&sem[11],p))
 		adderrbuf("removeBlocked: fails to return to free list   ");
-	debugB(420);
-	if (insertBlocked(&onesem, procp[9]) == FALSE) /*DBE Error is currently happening with this call*/	{
-		debugB(69);
+	debugB(230);
+	if (insertBlocked(&onesem, procp[9]) == FALSE) 
+	{
 		adderrbuf("insertBlocked: inserted more than MAXPROC   ");
 	}
 	debugB(8008);

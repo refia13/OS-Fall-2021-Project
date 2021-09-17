@@ -4,7 +4,7 @@
 #include "../h/asl.h"
 #include <limits.h>
 
-static semd_PTR semdFree_h; /*ASL Free List*/
+static semd_PTR semdFree_h = NULL; /*ASL Free List*/
 static semd_PTR semd_h; /*ASL Active List*/
 
 void debugC(int a, int b, int c)
@@ -14,12 +14,14 @@ void debugC(int a, int b, int c)
 }
 
 semd_PTR semdAlloc(int *semAdd) { /*Helper method that allocates a semaphore descriptor from free list*/
-	if(semdFree_h == NULL) {
+	if(semdFree_h == NULL || semdFree_h == 0)
+	{
+		debugC(1,2,3);
 		return NULL;
 	}
+	
 	semd_PTR temp = semdFree_h;
 	semdFree_h = semdFree_h->s_next;
-	debugC(0,0,0);
 	temp -> s_semAdd = semAdd;
 	temp -> s_procQ = mkEmptyProcQ();
 	return temp;
@@ -39,13 +41,13 @@ semd_PTR traverseASL(int *semAdd) { /*Helper Method to traverse the ASL*/
 
 void semdDealloc(semd_PTR s) {
 	/*Helper method that removes the semaphore descriptor pointed to by s from the active list and pushes it onto the free list. */
-	
-	semd_PTR temp = s->s_next->s_next;
-	s->s_next = semdFree_h;
-	semdFree_h = s->s_next;
-	s->s_next = temp;
-	s->s_semAdd = NULL;
-	s->s_procQ = mkEmptyProcQ();
+	semd_PTR tempChild = s -> s_next;
+	s -> s_next = s -> s_next -> s_next;
+	if(semdFree_h != 0)
+	{
+		tempChild -> s_next = semdFree_h;
+	}
+	semdFree_h = tempChild;
 }
 
 int insertBlocked(int *semAdd, pcb_PTR p) {
@@ -53,7 +55,7 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
 	semd_PTR temp = traverseASL(semAdd);
 	semd_PTR temp2 = temp -> s_next;
 	/*Case 1: semAdd was not found*/
-	if(temp2 -> s_semAdd != semAdd)
+	if((temp2 -> s_semAdd) != semAdd)
 	{
 		/*allocate a semaphore descriptor*/
 		semd_PTR tempNew = semdAlloc(semAdd);
@@ -78,7 +80,7 @@ pcb_PTR removeBlocked(int *semAdd) {
 	/*Search the ASL for the semaphore descriptor pointed to by semAdd, if none is found Return NULL; otherwise remove the head pcb from the process queue of the found semaphore descriptor and return a pointer to it. If the procQ for the semaphore descriptor becomes empty, remove the semd from the ASL and return it to the free List.*/
 	
 	semd_PTR temp = traverseASL(semAdd);
-	pcb_PTR tempPcb;
+	pcb_PTR tempPcb = NULL;
 	semd_PTR tempChild = temp -> s_next;
 	if(tempChild -> s_semAdd == semAdd)
 	{
@@ -126,21 +128,20 @@ void initASL() {
 	static semd_t semdTable[MAXPROC+2];
 	int i;
 	semdFree_h = NULL;
-	semd_h = NULL;
+	
 	for(i=1; i<MAXPROC; i++)
 	{
 		semdTable[i-1].s_next = &semdTable[i];
 	}
-	semdTable[MAXPROC].s_next = NULL;
+	semdTable[MAXPROC].s_next = &semdTable[MAXPROC+1];
+	semdTable[MAXPROC+1].s_next = NULL;
+	semdTable[MAXPROC].s_semAdd = 0;
+	semdTable[MAXPROC+1].s_semAdd = NULL;
+	semdTable[MAXPROC].s_procQ = mkEmptyProcQ();
+	semdTable[MAXPROC+1].s_procQ = mkEmptyProcQ();
 	semdFree_h = &semdTable[0];
 	semd_h = &semdTable[MAXPROC];
-	semd_PTR dummyTemp2 = &semdTable[MAXPROC+1];
-	semd_h -> s_semAdd = 0;
-	dummyTemp2 -> s_semAdd = (int *)INT_MAX;
-	dummyTemp2 -> s_next = NULL;
-	dummyTemp2->s_procQ = mkEmptyProcQ();
-	semd_h -> s_next = dummyTemp2;
-	semd_h -> s_procQ = mkEmptyProcQ();
+	
 	
 	
 }
