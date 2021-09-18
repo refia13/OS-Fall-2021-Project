@@ -304,16 +304,16 @@ void main() {
 	if (p != q)
 		adderrbuf("outBlocked(1): couldn't remove from valid queue   ");
 	q = headBlocked(&sem[9]);
-	debugB((int)q,100);
+	
 	if (q == NULL)
 		adderrbuf("headBlocked(2): NULL for an existent queue   ");
 	if (q != procp[19])
 		adderrbuf("headBlocked(2): wrong process returned   ");
 	p = outBlocked(q);
-	debugB((int)p,200);
 	if (p != q)
 		adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
 	p = outBlocked(q);
+	debugB((int)p,2000);
 	if (p != NULL)
 		adderrbuf("outBlocked: removed same process twice.");
 	if (headBlocked(&sem[9]) != NULL)

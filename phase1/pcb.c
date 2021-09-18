@@ -115,12 +115,15 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	else
 	{
 		int i;
+		pcb_PTR currentNext;
+		pcb_PTR currentPrev;
 		for(i=0; i<MAXPROC; i++) {
-			
+			currentNext = current -> p_next;
+			currentPrev = current -> p_prev;
 			if((current) == p)
 			{
-				current -> p_prev -> p_next = current -> p_next;
-				current -> p_next -> p_prev = current -> p_prev;
+				currentNext -> p_prev = currentPrev;
+				currentPrev -> p_next = currentNext;
 				return current;
 			}
 			current = current->p_next;
