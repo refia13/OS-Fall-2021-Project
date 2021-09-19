@@ -46,31 +46,6 @@ typedef struct {
 	unsigned int interrupt_dev[DEVINTNUM];
 	device_t	devreg[DEVINTNUM * DEVPERINT];
 } devregarea_t;
-
-/*Process Control Block Type*/
-typedef struct pcb_t {
-	/* Process Queue Fields */
-	struct pcb_t	*p_next,	/*pointer to next entry*/
-	        	*p_prev,	/*pointer to prev entry*/
-	/*process tree fields */
-	        	*p_prnt,
-			*p_child,
-			*p_next_sib,
-			*p_prev_sib;
-	/*process status info */
-	/*state_t		p_s;		 processor state*/
-	cpu_t		p_time;		/*cpu time used by proc*/
-	int		*p_semAdd;	
-	
-	/*support_t	*p_supportStruct;*/
-} pcb_t, *pcb_PTR;
-
-/*semaphore descriptor type*/
-typedef struct semd_t {
-	struct semd_t   *s_next;   /*next element on the ASL*/
-	int 		*s_semAdd; /*pointer tp tje semaphore*/
-	pcb_PTR 	s_procQ;  /*process queue for the semaphore descriptor */
-} semd_t, *semd_PTR;
 /* Pass Up Vector */
 typedef struct passupvector {
     unsigned int tlb_refll_handler;
@@ -88,6 +63,31 @@ typedef struct state_t {
 	int	 			s_reg[STATEREGNUM];
 
 } state_t, *state_PTR;
+
+/*Process Control Block Type*/
+typedef struct pcb_t {
+	/* Process Queue Fields */
+	struct pcb_t	*p_next,	/*pointer to next entry*/
+	        	*p_prev,	/*pointer to prev entry*/
+	/*process tree fields */
+	        	*p_prnt,
+			*p_child,
+			*p_next_sib,
+			*p_prev_sib;
+	/*process status info */
+	state_t		p_s;		 /*processor state*/
+	cpu_t		p_time;		/*cpu time used by proc*/
+	int		*p_semAdd;	
+	
+	/*support_t	*p_supportStruct;*/
+} pcb_t, *pcb_PTR;
+
+/*semaphore descriptor type*/
+typedef struct semd_t {
+	struct semd_t   *s_next;   /*next element on the ASL*/
+	int 		*s_semAdd; /*pointer tp tje semaphore*/
+	pcb_PTR 	s_procQ;  /*process queue for the semaphore descriptor */
+} semd_t, *semd_PTR;
 
 #define	s_at	s_reg[0]
 #define	s_v0	s_reg[1]

@@ -121,12 +121,6 @@ void adderrbuf(char *strp) {
 	PANIC();
 }
 
-void debugB(int a, int b) {
-	int i;
-	i = 0;
-	i++;
-}
-
 void main() {
 	int i;
 	initPcbs();
@@ -313,7 +307,6 @@ void main() {
 	if (p != q)
 		adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
 	p = outBlocked(q);
-	debugB((int)p,2000);
 	if (p != NULL)
 		adderrbuf("outBlocked: removed same process twice.");
 	if (headBlocked(&sem[9]) != NULL)
