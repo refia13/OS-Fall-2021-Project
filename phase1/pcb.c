@@ -103,8 +103,13 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	if(emptyProcQ(*tp)) {
 		return NULL;
 	}
-	pcb_PTR current = (*tp)->p_next;
-	
+	pcb_PTR current = (*tp);
+	if((*tp) == p)
+	{
+		(*tp) = mkEmptyProcQ();
+		return current;
+	}
+	current = current -> p_next;
 	if((current) == (p))
 	{
 		pcb_PTR headNext = current -> p_next;
@@ -115,15 +120,11 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	else
 	{
 		int i;
-		pcb_PTR currentNext;
-		pcb_PTR currentPrev;
 		for(i=0; i<MAXPROC; i++) {
-			currentNext = current -> p_next;
-			currentPrev = current -> p_prev;
 			if((current) == p)
 			{
-				currentNext -> p_prev = currentPrev;
-				currentPrev -> p_next = currentNext;
+				current -> p_next -> p_prev = current -> p_prev;
+				current -> p_prev -> p_next = current -> p_next;
 				return current;
 			}
 			current = current->p_next;
@@ -172,9 +173,7 @@ pcb_PTR removeChild(pcb_PTR p) {
 
 pcb_PTR outChild(pcb_PTR p) {
 	/* Make the pcb pointed to by p no longer the child of its parent. If the pcb has no parent return NULL; otherwise return p. Note that the element pointed to by p need not be the first child of its parent*/
-	debugA((int)p->p_prnt,2,3,4);
 	if ((p->p_prnt) == NULL) {
-		debugA(1,2,3,4);
 		return NULL;
 	}
 
