@@ -12,6 +12,8 @@ semd_PTR semdAlloc(int *semAdd) { /*Helper method that allocates a semaphore des
 				    Or in the case where the free list is empty or its pointer has defaulted to the default zero value, returns NULL*/
 	if(semdFree_h == NULL || semdFree_h == 0)
 	{
+		/*This if statement also checks whether semdFree_h has become the default parameter
+		value 0, as trying to access fields of 0 causes a Bus Error*/
 		semdFree_h = NULL;
 		return NULL;
 	}

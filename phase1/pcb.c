@@ -114,9 +114,12 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 		{
 			/*Tail's next points to itself*/
 			(*tp) = mkEmptyProcQ();
+			return current;
 		}
+		(*tp) -> p_next -> p_prev = (*tp) -> p_prev;
+		(*tp) -> p_prev -> p_next = (*tp) -> p_next;
+		(*tp) = (*tp) -> p_prev;
 		
-		return current;
 	}
 	current = current -> p_next;
 	int i;
