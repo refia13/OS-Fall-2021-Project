@@ -64,6 +64,13 @@ typedef struct state_t {
 
 } state_t, *state_PTR;
 
+/*Support Structure*/
+typedef struct support_t {
+	
+	int *dummyField;
+
+}
+
 /*Process Control Block Type*/
 typedef struct pcb_t {
 	/* Process Queue Fields */
@@ -79,7 +86,7 @@ typedef struct pcb_t {
 	cpu_t		p_time;		/*cpu time used by proc*/
 	int		*p_semAdd;	
 	
-	/*support_t	*p_supportStruct;*/
+	support_t	*p_supportStruct;
 } pcb_t, *pcb_PTR;
 
 /*semaphore descriptor type*/

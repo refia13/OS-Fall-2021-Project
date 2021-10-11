@@ -1,1 +1,52 @@
-/*This file initializes the nucleus of the OS*/
+/*This module initializes the nucleus of the PAND OS*/
+
+#include "../h/const.h"
+#include "../h/types.h"
+#include "../h/pcb.h"
+#include "../h/asl.h"
+#include "../h/initial.h"
+#include "../h/scheduler.h"
+
+static int deviceCount = 2;
+static extern int processCount;
+static extern int blockedCount;
+static extern pcb_PTR readyQ;
+static extern pcb_PTR currentProc;
+static extern int deviceSema4s[2*deviceCount]; /*Two Sema4s per Device*/
+
+
+/*
+This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
+and 
+*/
+public void main() {
+
+	/*Populate the Processor 0 pass Up Vector*/
+	xxx->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
+	
+	/*Set the nucleus exception handler*/
+	xxx->exception_handler = (memaddr) foobar;
+	
+	/*Initialize the pcbs and ASL*/
+	initPcbs();
+	initAsl();
+	/*Initialize the global variables*/
+	processCount = 0;
+	blockedCount = 0;
+	readyQ = mkEmptyProcQ();
+	currentProc = NULL;
+	int i;
+	for(i = 0; i < 2*deviceCount; i++)
+	{
+		deviceSema4s[i] = 0;
+	}
+	
+	/*Load the system wide interval timer with 100 milliseconds*/
+	
+	/*Allocate the first pcb and insert it onto the readyQ*/
+	tempPcb = allocPcb;
+	tempPcb -> p_s.s_pc = (memaddr) test;
+	insertProcQ(&readyQ,tempPcb);
+	
+	scheduler();
+}

@@ -28,6 +28,8 @@ pcb_PTR allocPcb() {
 		temp -> p_prnt = NULL;
 		temp -> p_next_sib = NULL;
 		temp -> p_prev_sib = NULL;
+		temp -> p_time = 0;
+		temp -> p_supportStruct = NULL;
 	}
 	return temp;
 }
