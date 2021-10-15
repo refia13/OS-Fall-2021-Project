@@ -7,13 +7,12 @@
 #include "../h/initial.h"
 #include "../h/scheduler.h"
 
-static int deviceCount = 2;
 static extern int processCount;
 static extern int blockedCount;
 static extern pcb_PTR readyQ;
 static extern pcb_PTR currentProc;
-static extern int deviceSema4s[2*deviceCount]; /*Two Sema4s per Device*/
-
+static extern int deviceSema4s[5][8]; /*Two Sema4s per Device*/
+void extern test();
 
 /*
 This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
@@ -36,10 +35,14 @@ public void main() {
 	readyQ = mkEmptyProcQ();
 	currentProc = NULL;
 	int i;
-	for(i = 0; i < 2*deviceCount; i++)
+	int j;
+	for(i = 0, i < 5, i++)
 	{
-		deviceSema4s[i] = 0;
-	}
+		for(j = 0, j < 8, j++)
+		{
+			deviceSema4s[i][j] = 0;
+		}
+	} 
 	
 	/*Load the system wide interval timer with 100 milliseconds*/
 	
