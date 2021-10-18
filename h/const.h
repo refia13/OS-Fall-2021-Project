@@ -88,4 +88,11 @@
 /* Macro to read the TOD clock */
 #define STCK(T) ((T) = ((* ((cpu_t *) TODLOADDR)) / (* ((cpu_t *) TIMESCALEADDR))))
 
+/*BIT Patterns*/
+#define ALLOFF 0x00000000
+#define IMON 0x0000FF00
+#define TEON 0x08000000
+#define ION 0x00000001
+
+
 #endif

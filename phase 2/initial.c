@@ -11,20 +11,22 @@ static extern int processCount;
 static extern int blockedCount;
 static extern pcb_PTR readyQ;
 static extern pcb_PTR currentProc;
-static extern int deviceSema4s[5][8]; /*Two Sema4s per Device*/
+static int semCount = 49;
+static extern int deviceSema4s[semCount];
 void extern test();
 
 /*
 This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
 and 
 */
-public void main() {
+public int main() {
 
 	/*Populate the Processor 0 pass Up Vector*/
-	xxx->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
+	passUpVector_t pv = (memaddr) 0x0FFFF900;
+	pv->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
 	
 	/*Set the nucleus exception handler*/
-	xxx->exception_handler = (memaddr) foobar;
+	pv->exception_handler = (memaddr) foobar;
 	
 	/*Initialize the pcbs and ASL*/
 	initPcbs();
@@ -36,12 +38,9 @@ public void main() {
 	currentProc = NULL;
 	int i;
 	int j;
-	for(i = 0, i < 5, i++)
+	for(i = 0, i < semCount, i++)
 	{
-		for(j = 0, j < 8, j++)
-		{
-			deviceSema4s[i][j] = 0;
-		}
+		devSema4s[i] = 0;
 	} 
 	
 	/*Load the system wide interval timer with 100 milliseconds*/
@@ -52,4 +51,9 @@ public void main() {
 	insertProcQ(&readyQ,tempPcb);
 	
 	scheduler();
+	
+}
+
+public int genExceptionHandler() {
+
 }

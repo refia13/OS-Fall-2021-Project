@@ -13,7 +13,7 @@ public void scheduler() {
 	/*Load 5 milliseconds onto the PLT*/
 	newTimer = getTIMER() + 5;
 	setTIMER(newTimer);
-	LDST(currentProc->p_s);
+	newState(currentProc->p_s);
 	if(processCount == 0)
 	{
 		HALT();
@@ -22,19 +22,15 @@ public void scheduler() {
 	{
 		/*Twiddle Thumbs until device interrupt*/
 		/*currentProc->p_s->s_status bit 0 is set to 1, then set bits 8-15 to 1*/
-		bit = 2^0;
-		currentProc->p_s->s_status & bit;
-		for(i = 8, bit <= 15, bit++)
-		{
-			bit = 2^i;
-			currentProc->p_s->s_status & bit;
-		}
-		bit = 2^27;
-		currentProc->p_s->s_status & bit;
+		currentProc -> p_s = ALLOFF | ION | IMON;
 		WAIT();
 	}
 	else
 	{
 		PANIC();
 	}
+}
+
+public int newState(state_t s) {
+	LDST(s);
 }
