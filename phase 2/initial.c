@@ -51,9 +51,11 @@ public int main() {
 	insertProcQ(&readyQ,tempPcb);
 	
 	scheduler();
-	
+	return 0;
 }
 
 public int genExceptionHandler() {
-
+	
 }
+
+

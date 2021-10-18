@@ -31,6 +31,6 @@ public void scheduler() {
 	}
 }
 
-public int newState(state_t s) {
-	LDST(s);
+public int newState(state_PTR s) {
+	LDST(*s);
 }
