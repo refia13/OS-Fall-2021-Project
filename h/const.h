@@ -96,9 +96,14 @@
 #define IEPON 0x00000004
 #define KUPON 0x00000008
 
+/*Exception related Constants*/
+#define PGFAULTEXCEPT 0
+#define GENERALEXEPT 1
+
 /*Memory Constants*/
 #define STACKADDRESS 0x20001000
 #define RAMTOP (RAMBASEADDR + RAMSTART)
+#define EXCEPTSTATEADDR 0x0FFFF000
 
 /*SYSCALL CODES*/
 #define CREATEPROCESS 1

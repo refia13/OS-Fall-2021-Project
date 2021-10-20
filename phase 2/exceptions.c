@@ -24,16 +24,17 @@ public void syscallHandler(int syscallCode)
 		case TERMPROCESS: {
 			/*SYS2 Terminate Process*/
 			/*Recursively terminates currentProc and its children*/
+			outChild(currentProc);
 			terminateProcess(currentProc);}
 		case PASSEREN: {
 			/*SYS3 Passaren*/
-			passaren(); }
+			passeren(); }
 		case VERHOGEN: {
 			/*SYS4 Verhogen*/
 			verhogen(); }
 		case WAITFORIO: {
 			/*SYS5 Wait for IO*/
-			deviceInterrupt(); }
+			waitForDevice(); }
 		case GETCPUT:
 			/*SYS6 Get CPU Time*/
 			cpu_t time = currentProc -> p_time;
@@ -50,6 +51,7 @@ public void syscallHandler(int syscallCode)
 			}
 		default:
 			/*Pass up or Die*/
+			passUpOrDie();
 	}
 	
 
@@ -77,11 +79,11 @@ public void terminateProcess(pcb_PTR current) {
 	processCount--;
 }
 
-public void pasaren() {
+public void passeren() {
 	currentProc -> p_s.a1--;
 	if(currentProc->p_s.a1 < 0)
 	{
-		insertBlocked(&(currentProc->p_s.a1, p);
+		insertBlocked(&(currentProc->p_s.a1), p);
 		softBlockCount++;
 	}
 	scheduler();
@@ -101,12 +103,38 @@ public void verhogen() {
 	}
 }
 
-public void deviceInterupt() {
+public void waitForDevice() {
 	
-	
+	int lineNo = currentProc->p_s.a1;
+	int devNo = currentProc->p_s.a2;
+	int devIndex = (lineNo)*devNo+1;
+	int devSem = deviceSema4s[devIndex];
+	currentProc->p_s.a1 = devSem;
+	passeren();
 }
 
 public void waitForClock() {
+	currentProc->p_s.a1 = clockSem;
+	passeren();
+}
 
+void uTLB_RefillHandler() {
+	setENTRYHI (0x80000000);
+	setENTRYLO (0x00000000);
+	TLBWR();
+	LDST((state_PTR) 0x0FFFF000);
+}
+
+void passUpOrDie()
+{
+	/*Support_t is not NULL*/
+	if(currentProc->support_t != NULL) {
+		/*Pass Up*/
+		currentProc->p_support->sup_exceptState[0] = (state_PTR) EXCEPTSTATEADDR;
+		LDCXT(currentProc->p_support->sup_exceptContext);
+	}
+	else {/*Die*/
+		outChild(currentProc); 
+		terminateProcess(currentProc); }
 }
 

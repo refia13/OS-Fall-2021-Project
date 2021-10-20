@@ -64,12 +64,23 @@ typedef struct state_t {
 
 } state_t, *state_PTR;
 
+ /*process context*/
+typedef struct context_t {
+	/*Process Context Fields*/
+	unsigned int c_stackPtr,
+		     c_status,
+		     c_pc;
+} context_t;
+
 /*Support Structure*/
 typedef struct support_t {
 	
-	int *dummyField;
+	int sup_asid;
+	state_t sup_exceptState[2];
+	context_t sup_exceptContext[2];
 
-}
+} support_t;
+
 
 /*Process Control Block Type*/
 typedef struct pcb_t {
@@ -127,6 +138,7 @@ typedef struct semd_t {
 #define s_ra	s_reg[28]
 #define s_HI	s_reg[29]
 #define s_LO	s_reg[30]
+
 
 
 #endif
