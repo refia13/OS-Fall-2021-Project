@@ -1,5 +1,5 @@
 /*This will be the exceptions handling file. It tells the OS what to do when syscalls and exceptions occur*/
-
+/*Included header files for use within exceptions.c*/
 #include "../h/const.h"
 #include "../h/types.h"
 #include "../h/pcb.h"
@@ -9,37 +9,53 @@
 #include "../h/scheduler.h"
 #include "../h/interrupts.h"
 
+/*Single parameter method to handle syscalls*/
 public void syscallHandler(int syscallCode)
 {
+	/*Checks current state of program, to see if currently in user mode*/
 	if(currentProc->p_s.s_status & KUPON)
 	{
 		/*Attempted a syscall in user mode, triggger a program trap*/
 		programTrap();
 	}
+	/*Switch case using parameter value to determine current syscall code, then calls other methods to act*/
+	/*NOTE TO WILL: Are breaks needed for cleanliness/to prevent redundant case checking? Also might move code descriptions for clarity*/
 	switch(syscallCode) 
 	{
 		case CREATEPROCESS: {
 			/*SYS1 Create Process*/
+			/*Creates a new process for use*/
 			createProcess(); }
 		case TERMPROCESS: {
 			/*SYS2 Terminate Process*/
-			/*Recursively terminates currentProc and its children*/
+			/*Removes currentProc as a child*/
 			outChild(currentProc);
+			/*Recursively terminates currentProc and its children*/
 			terminateProcess(currentProc);
+			/*Calls the scheduler*/
+			/*NOTE TO SELF: check this function and write a better comment*/
 			scheduler();}
 		case PASSEREN: {
 			/*SYS3 Passaren*/
+			/*NOTE TO SELF: check what this function does, write comment*/
 			passeren(); }
 		case VERHOGEN: {
 			/*SYS4 Verhogen*/
+			/*NOTE TO SELF: check what this function does, write comment*/
 			verhogen(); }
 		case WAITFORIO: {
 			/*SYS5 Wait for IO*/
+			/*Waits for input or output from a device*/
+			/*NOTE TO SELF: check what this function does, write better comment*/
 			waitForDevice(); }
 		case GETCPUT:
 			/*SYS6 Get CPU Time*/
+			/*Assigns [s_v0] of currentProc to its own time value*/
 			currentProc->p_s.s_v0 = currentProc->p_time;
+			/*Adds the value of [WORDLEN] to currentProc's [s_pc]*/
+			/*NOTE TO SELF: variables in brackets should be checked to make better comments*/
 			currentProc->p_s.s_pc + WORDLEN;
+			/*Creates a new state based on the state of the current Proc*/
 			newState(&procState);
 		case WAITFORCLOCK: {
 			/*SYS7 Wait for Clock*/
@@ -51,6 +67,7 @@ public void syscallHandler(int syscallCode)
 			newState(&procState);
 			}
 		default:
+			/*Emergency case*/
 			/*Pass up or Die*/
 			passUpOrDie();
 	}
@@ -73,11 +90,15 @@ public void createProcess() {
 
 public void terminateProcess(pcb_PTR current) {
 	/*Terminate the current process, and all of its children*/
+	/*Checks if the current node has a child*/
 	if(!emptyChild(current))
 	{
+		/*If current node has child, function calls itself passing current's child as the parameter*/
 		terminateProcess(current->p_child);
 	}
+	/*Current node is deleted*/
 	freePcb(current);
+	/*Process count is decremented*/
 	processCount--;
 }
 
