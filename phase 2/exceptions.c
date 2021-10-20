@@ -28,13 +28,7 @@ public void syscallHandler(int syscallCode)
 			createProcess(); }
 		case TERMPROCESS: {
 			/*SYS2 Terminate Process*/
-			/*Removes currentProc as a child*/
-			outChild(currentProc);
-			/*Recursively terminates currentProc and its children*/
-			terminateProcess(currentProc);
-			/*Calls the scheduler*/
-			/*NOTE TO SELF: check this function and write a better comment*/
-			scheduler();}
+			terminateProcess(currentProc);}
 		case PASSEREN: {
 			/*SYS3 Passaren*/
 			/*NOTE TO SELF: check what this function does, write comment*/
@@ -91,15 +85,29 @@ public void createProcess() {
 public void terminateProcess(pcb_PTR current) {
 	/*Terminate the current process, and all of its children*/
 	/*Checks if the current node has a child*/
-	if(!emptyChild(current))
+	while(!emptyChild(current)) 
 	{
-		/*If current node has child, function calls itself passing current's child as the parameter*/
 		terminateProcess(current->p_child);
 	}
-	/*Current node is deleted*/
-	freePcb(current);
-	/*Process count is decremented*/
-	processCount--;
+	if(current == currentProc)
+	{	
+		outChild(current);
+	}
+	if(current->p_semAdd == NULL)
+	{
+		outProcQ(&readyQ, current);
+	}
+	if(current->p_semAdd >= &devSem[0] && current->p_semAdd <= &clockSem)
+	{
+		int semAdd = current->p_semAdd;
+		pcb_PTR p = outBlocked(semAdd);
+		while(p != NULL)
+		{
+			softBlockCount--;
+			p = outBlocked(semAdd);
+		}
+	}
+	freePcb(current); 
 }
 
 public void passeren() {
@@ -107,7 +115,6 @@ public void passeren() {
 	if(currentProc->p_s.a1 < 0)
 	{
 		insertBlocked(&(currentProc->p_s.a1), p);
-		softBlockCount++;
 		scheduler();
 	}
 	else {
@@ -125,7 +132,6 @@ public void verhogen() {
 		if(p != NULL)
 		{
 			insertProcQ(&readyQ, p);
-			softBlockCount--;
 		}
 		
 	}
@@ -138,11 +144,13 @@ public void waitForDevice() {
 	int devIndex = (lineNo)*devNo+1;
 	int devSem = deviceSema4s[devIndex];
 	currentProc->p_s.a1 = devSem;
+	switchState(currentProc->p_s);
 	passeren();
 }
 
 public void waitForClock() {
 	currentProc->p_s.a1 = clockSem;
+	switchState(currentProc->p_s);
 	passeren();
 }
 

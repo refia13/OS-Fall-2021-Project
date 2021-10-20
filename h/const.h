@@ -68,7 +68,7 @@
 #define KUSEG           0x80000000
 #define RAMSTART        0x20000000
 #define BIOSDATAPAGE    0x0FFFF000
-#define	PASSUPVECTOR	  0x0FFFF900
+#define PASSUPVECTOR	 0x0FFFF900
 
 /* Exceptions related constants */
 #define	PGFAULTEXCEPT	  0
@@ -88,6 +88,10 @@
 /* Macro to read the TOD clock */
 #define STCK(T) ((T) = ((* ((cpu_t *) TODLOADDR)) / (* ((cpu_t *) TIMESCALEADDR))))
 
+/*Time Constants*/
+#define ITSECOND 10000
+#define TIMESLICE 5000
+
 /*BIT Patterns*/
 #define ALLOFF 0x00000000
 #define IMON 0x0000FF00
@@ -95,11 +99,21 @@
 #define IECON 0x00000001
 #define IEPON 0x00000004
 #define KUPON 0x00000008
-#define EXMASK 0x000000FC
+#define EXMASK 0x0000007C
+#define ITINTERRUPT 0x00000200
+#define PLTINTERRUPT 0x00000400
+#define DISKINTERRUPT 0x00000800
+#define FLASHINTERRUPT 0x00001000
+#define PRINTERINTERRUPT 0x00004000
+#define TERMINTERRUPT 0x00008000
 
 /*Exception related Constants*/
 #define PGFAULTEXCEPT 0
 #define GENERALEXEPT 1
+#define SYSCALLEXCEPT 8
+#define IOEXCEPT 0
+#define TLBREFILLEXCEPT 3
+
 
 /*Memory Constants*/
 #define STACKADDRESS 0x20001000
@@ -115,4 +129,8 @@
 #define GETCPUT 6
 #define WAITFORCLOCK 7
 #define GETSUPPORTT 8
+
+/*Mneumonic Constants*/
+
+
 #endif

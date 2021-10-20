@@ -48,7 +48,7 @@ public int main() {
 	} 
 	
 	/*Load the system wide interval timer with 100 milliseconds*/
-	LDIT(100);
+	LDIT(ITSECOND);
 	/*Allocate the first pcb and insert it onto the readyQ*/
 	tempPcb = allocPcb();
 	/*set up the first processor state*/
@@ -67,33 +67,28 @@ public int main() {
 public int genExceptionHandler() {
 	/*Wake up in the general exception handler*/
 	/*Check Cause Exception Code*/
-	int excCode = (currentProc->p_s.s_cause  ALLOFF & EXMASK) >> 
+	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	int excCode = (oldState->s_cause & EXMASK) >> 
 	/*Case 1 Cause Code == 0: Interrupts*/
-	if(excCode == 0)
+	if(excCode == IOEXCEPT)
 	{
 		interrupHandler();
-		
-	
 	}
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
-	if(excCode <= 3)
+	if(excCode <= TLBREFILLEXCEPT)
 	{
 		tlb_refillHandler()
 	}
-	/*Case 3 Code >= 4 <=12 !=8: Prgm Traps*/
-	if(excCode != 8)
+	/*Case 3 Code == 8: SYSCALL*/
+	if(excCode == SYSCALLEXCEPT)
 	{
-		programTrap();
-	}
-	/*Case 4 Code == 8: SYSCALL*/
-	if(excCode == 8)
-	{
-		syscallHandler(currentProc->p_s.a0);
+		syscallHandler(oldState->s_a0);
 	}
 	/*Other: Pass Up or Die*/
 	else {
 		passUpOrDie();
 	}
 	
+	programTrapHandler();
 
 
