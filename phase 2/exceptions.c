@@ -9,35 +9,40 @@
 #include "../h/scheduler.h"
 #include "../h/interrupts.h"
 
-public void syscallHandler(int syscallCode, state_t *procState, support_t supportp)
+public void syscallHandler(int syscallCode)
 {
+	if(currentProc->p_s.s_status & KUPON)
+	{
+		/*Attempted a syscall in user mode, triggger a program trap*/
+		programTrap();
+	}
 	switch(syscallCode) 
 	{
-		case 1: {
+		case CREATEPROCESS: {
 			/*SYS1 Create Process*/
 			createProcess(); }
-		case 2: {
+		case TERMPROCESS: {
 			/*SYS2 Terminate Process*/
 			/*Recursively terminates currentProc and its children*/
-			terminateProcess();}
-		case 3: {
+			terminateProcess(currentProc);}
+		case PASSEREN: {
 			/*SYS3 Passaren*/
 			passaren(); }
-		case 4: {
+		case VERHOGEN: {
 			/*SYS4 Verhogen*/
 			verhogen(); }
-		case 5: {
+		case WAITFORIO: {
 			/*SYS5 Wait for IO*/
 			deviceInterrupt(); }
-		case 6:
+		case GETCPUT:
 			/*SYS6 Get CPU Time*/
 			cpu_t time = currentProc -> p_time;
 			procState -> s_v0 = time;
 			newState(&procState);
-		case 7: {
+		case WAITFORCLOCK: {
 			/*SYS7 Wait for Clock*/
 			waitForClock(); }
-		case 8: {
+		case GETSUPPORTT: {
 			/*SYS8 Get Support Data*/
 			support_t tempSupport = currentProc -> p_supportStruct;
 			procState -> s_v0 = tempSupport;
@@ -50,6 +55,7 @@ public void syscallHandler(int syscallCode, state_t *procState, support_t suppor
 
 }
 
+
 public void createProcess() {
 	pcb_PTR newProc = allocPcb();
 	newProc -> p_s = procState -> s_a1;
@@ -61,13 +67,14 @@ public void createProcess() {
 	newProc -> p_semAdd = NULL;
 }
 
-public void terminateProcess() {
-	freePcb(currentProc);
-	if(!emptyChild(currentProc))
+public void terminateProcess(pcb_PTR current) {
+	/*Terminate the current process, and all of its children*/
+	if(!emptyChild(current))
 	{
-		terminateProcess();
-		processCount--;
+		terminateProcess(current->p_child);
 	}
+	freePcb(current);
+	processCount--;
 }
 
 public void pasaren() {
@@ -75,6 +82,7 @@ public void pasaren() {
 	if(currentProc->p_s.a1 < 0)
 	{
 		insertBlocked(&(currentProc->p_s.a1, p);
+		softBlockCount++;
 	}
 	scheduler();
 }
@@ -87,15 +95,18 @@ public void verhogen() {
 		if(p != NULL)
 		{
 			insertProcQ(&readyQ, p);
+			softBlockCount--;
 		}
 		
 	}
 }
 
 public void deviceInterupt() {
-
+	
+	
 }
 
 public void waitForClock() {
 
 }
+

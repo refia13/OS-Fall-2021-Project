@@ -22,7 +22,7 @@ public void scheduler() {
 	{
 		/*Twiddle Thumbs until device interrupt*/
 		/*currentProc->p_s->s_status bit 0 is set to 1, then set bits 8-15 to 1*/
-		currentProc -> p_s = ALLOFF | ION | IMON;
+		currentProc -> p_s = ALLOFF | IEPON | IMON;
 		WAIT();
 	}
 	else

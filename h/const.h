@@ -92,7 +92,21 @@
 #define ALLOFF 0x00000000
 #define IMON 0x0000FF00
 #define TEON 0x08000000
-#define ION 0x00000001
+#define IECON 0x00000001
+#define IEPON 0x00000004
+#define KUPON 0x00000008
 
+/*Memory Constants*/
+#define STACKADDRESS 0x20001000
+#define RAMTOP (RAMBASEADDR + RAMSTART)
 
+/*SYSCALL CODES*/
+#define CREATEPROCESS 1
+#define TERMPROCESS 2
+#define PASSEREN 3
+#define VERHOGEN 4
+#define WAITFORIO 5
+#define GETCPUT 6
+#define WAITFORCLOCK 7
+#define GETSUPPORTT 8
 #endif
