@@ -95,6 +95,7 @@
 #define IECON 0x00000001
 #define IEPON 0x00000004
 #define KUPON 0x00000008
+#define EXMASK 0x000000FC
 
 /*Exception related Constants*/
 #define PGFAULTEXCEPT 0
@@ -102,8 +103,8 @@
 
 /*Memory Constants*/
 #define STACKADDRESS 0x20001000
-#define RAMTOP (RAMBASEADDR + RAMSTART)
 #define EXCEPTSTATEADDR 0x0FFFF000
+#define BUSADDRESS 0x10000000
 
 /*SYSCALL CODES*/
 #define CREATEPROCESS 1

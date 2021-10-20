@@ -25,7 +25,8 @@ public void syscallHandler(int syscallCode)
 			/*SYS2 Terminate Process*/
 			/*Recursively terminates currentProc and its children*/
 			outChild(currentProc);
-			terminateProcess(currentProc);}
+			terminateProcess(currentProc);
+			scheduler();}
 		case PASSEREN: {
 			/*SYS3 Passaren*/
 			passeren(); }
@@ -37,16 +38,16 @@ public void syscallHandler(int syscallCode)
 			waitForDevice(); }
 		case GETCPUT:
 			/*SYS6 Get CPU Time*/
-			cpu_t time = currentProc -> p_time;
-			procState -> s_v0 = time;
+			currentProc->p_s.s_v0 = currentProc->p_time;
+			currentProc->p_s.s_pc + WORDLEN;
 			newState(&procState);
 		case WAITFORCLOCK: {
 			/*SYS7 Wait for Clock*/
 			waitForClock(); }
 		case GETSUPPORTT: {
 			/*SYS8 Get Support Data*/
-			support_t tempSupport = currentProc -> p_supportStruct;
-			procState -> s_v0 = tempSupport;
+			currentProc->p_s.s_v0 = currentProc->p_support;
+			currentProc->p_s.s_pc + WORDLEN;
 			newState(&procState);
 			}
 		default:
@@ -67,6 +68,7 @@ public void createProcess() {
 	processCount++;
 	newProc -> p_time = 0;
 	newProc -> p_semAdd = NULL;
+	currentProc->p_s.s_pc + WORDLEN;
 }
 
 public void terminateProcess(pcb_PTR current) {
@@ -85,8 +87,13 @@ public void passeren() {
 	{
 		insertBlocked(&(currentProc->p_s.a1), p);
 		softBlockCount++;
+		scheduler();
 	}
-	scheduler();
+	else {
+		currentProc->p_s.s_pc + WORDLEN;
+		newState(&(currentProc->p_s));
+	}
+	
 }
 
 public void verhogen() {
@@ -122,7 +129,7 @@ void uTLB_RefillHandler() {
 	setENTRYHI (0x80000000);
 	setENTRYLO (0x00000000);
 	TLBWR();
-	LDST((state_PTR) 0x0FFFF000);
+	newState((state_PTR) 0x0FFFF000);
 }
 
 void passUpOrDie()

@@ -30,7 +30,8 @@ public int main() {
 	/*Set the nucleus exception handler*/
 	pv->exception_handler = (memaddr) genExceptionHandler;
 	pv->exception_stackPtr = (memaddr) STACKADDRESS;
-	
+	devregarea_t devrega = (*deregarea_t) BUSADDRESS;
+	ramtop = (devrega->rambase) + (devrega->ramsize);
 	/*Initialize the pcbs and ASL*/
 	initPcbs();
 	initAsl();
@@ -51,7 +52,7 @@ public int main() {
 	/*Allocate the first pcb and insert it onto the readyQ*/
 	tempPcb = allocPcb();
 	/*set up the first processor state*/
-	tempPcb->p_s.s_sp = RAMTOP;
+	tempPcb->p_s.s_sp = ramtop;
 	tempPcb->p_s.s_pc = (memaddr) test;
 	tempPcb->p_s.s_t9 = (memaddr) test;
 	tempPcb->p_s.s_status = ALLOFF | IEPON | IMON | TEON;
@@ -66,24 +67,26 @@ public int main() {
 public int genExceptionHandler() {
 	/*Wake up in the general exception handler*/
 	/*Check Cause Exception Code*/
+	int excCode = (currentProc->p_s.s_cause  ALLOFF & EXMASK) >> 
 	/*Case 1 Cause Code == 0: Interrupts*/
-	if(currentProc->p_s.s_cause.ExcCode == 0)
+	if(excCode == 0)
 	{
-	
+		interrupHandler();
+		
 	
 	}
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
-	if(currentProc.p_s.s_cause.ExcCode <= 3)
+	if(excCode <= 3)
 	{
-	
+		tlb_refillHandler()
 	}
 	/*Case 3 Code >= 4 <=12 !=8: Prgm Traps*/
-	if(currentProc->p_s.s_cause.ExcCode != 8)
+	if(excCode != 8)
 	{
-	
+		programTrap();
 	}
 	/*Case 4 Code == 8: SYSCALL*/
-	if(currentProc->p_s.s_cause.ExcCode == 8)
+	if(excCode == 8)
 	{
 		syscallHandler(currentProc->p_s.a0);
 	}
