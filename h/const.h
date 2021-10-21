@@ -107,6 +107,16 @@
 #define PRINTERINTERRUPT 0x00004000
 #define TERMINTERRUPT 0x00008000
 
+/*Device Interrupt Masks*/
+#define DEV0 0x00000000
+#define DEV1 0x00000002
+#define DEV2 0x00000004
+#define DEV3 0x00000008
+#define DEV4 0x00000010
+#define DEV5 0x00000020
+#define DEV6 0x00000040
+#define DEV7 0x00000080
+
 /*Exception related Constants*/
 #define PGFAULTEXCEPT 0
 #define GENERALEXEPT 1
