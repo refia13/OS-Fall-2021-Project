@@ -131,6 +131,6 @@
 #define GETSUPPORTT 8
 
 /*Mneumonic Constants*/
-
+#define PCINCREMENT 4
 
 #endif
