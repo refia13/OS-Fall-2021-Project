@@ -18,75 +18,93 @@ public void syscallHandler(int syscallCode)
 		/*Attempted a syscall in user mode, triggger a program trap*/
 		programTrap();
 	}
+	
 	/*Switch case using parameter value to determine current syscall code, then calls other methods to act*/
 	/*NOTE TO WILL: Are breaks needed for cleanliness/to prevent redundant case checking? Also might move code descriptions for clarity*/
 	switch(syscallCode) 
 	{
+		/*SYS1 Create Process*/
 		case CREATEPROCESS: {
-			/*SYS1 Create Process*/
 			/*Creates a new process for use*/
 			createProcess(); }
+			
+		/*SYS2 Terminate Process*/	
 		case TERMPROCESS: {
-			/*SYS2 Terminate Process*/
-			terminateProcess(currentProc);}
+			terminateProcess(currentProc); }
+			
+		/*SYS3 Passaren*/
 		case PASSEREN: {
-			/*SYS3 Passaren*/
 			/*NOTE TO SELF: check what this function does, write comment*/
 			passeren(); }
+			
+		/*SYS4 Verhogen*/	
 		case VERHOGEN: {
-			/*SYS4 Verhogen*/
 			/*NOTE TO SELF: check what this function does, write comment*/
 			verhogen(); }
+			
+		/*SYS5 Wait for IO*/
 		case WAITFORIO: {
-			/*SYS5 Wait for IO*/
 			/*Waits for input or output from a device*/
 			/*NOTE TO SELF: check what this function does, write better comment*/
 			waitForDevice(); }
-		case GETCPUT:
-			/*SYS6 Get CPU Time*/
+			
+		/*SYS6 Get CPU Time*/
+		case GETCPUT: {
 			/*Assigns [s_v0] of currentProc to its own time value*/
 			currentProc->p_s.s_v0 = currentProc->p_time;
 			/*Adds the value of [WORDLEN] to currentProc's [s_pc]*/
 			/*NOTE TO SELF: variables in brackets should be checked to make better comments*/
 			currentProc->p_s.s_pc + WORDLEN;
 			/*Creates a new state based on the state of the current Proc*/
-			newState(&procState);
+			newState(&procState); }
+			
+		/*SYS7 Wait for Clock*/
 		case WAITFORCLOCK: {
-			/*SYS7 Wait for Clock*/
 			waitForClock(); }
+			
+		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
-			/*SYS8 Get Support Data*/
 			currentProc->p_s.s_v0 = currentProc->p_support;
 			currentProc->p_s.s_pc + WORDLEN;
-			newState(&procState);
-			}
-		default:
-			/*Emergency case*/
+			newState(&procState); }
+			
+		/*Sycall code is greater than 8*/
+		default: {			
 			/*Pass up or Die*/
-			passUpOrDie();
+			passUpOrDie(); }
 	}
 	
 
 }
 
-
+/*Creates a new process for use*/
 public void createProcess() {
+	/*Creates new process by allocating PCB*/
 	pcb_PTR newProc = allocPcb();
+	/*Initializes new process' state using value pointed to by a1*/
 	newProc -> p_s = procState -> s_a1;
+	/*Initializes the support structure of the new process using value pointed to by a2*/
 	newProc -> p_supportStruct = procState -> s_a2;
+	/*Inserts new process into the ready queue*/
 	insertProcQ(&readyQ,newProc);
+	/*Assigns new process as the child of the current process*/
 	insertChild(currentProc,newProc);
+	/*Process count incremented*/
 	processCount++;
+	/*CPU time initialized to zero*/
 	newProc -> p_time = 0;
+	/*Initializes the new process in the "ready" state, rather than a blocked state*/
 	newProc -> p_semAdd = NULL;
+	/*Increment pc to avoid syscall loop*/
 	currentProc->p_s.s_pc + WORDLEN;
 }
 
+/*Terminate the current process, and all of its children*/
 public void terminateProcess(pcb_PTR current) {
-	/*Terminate the current process, and all of its children*/
 	/*Checks if the current node has a child*/
 	while(!emptyChild(current)) 
 	{
+		/*Recurses, using the current node's child as a parameter input*/
 		terminateProcess(current->p_child);
 	}
 	if(current == currentProc)
