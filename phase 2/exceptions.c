@@ -29,16 +29,19 @@ public void syscallHandler(int syscallCode)
 			
 		/*SYS2 Terminate Process*/	
 		case TERMPROCESS: {
+			/*Terminates the current process and all of its progeny*/
 			terminateProcess(currentProc); }
 			
 		/*SYS3 Passaren*/
 		case PASSEREN: {
-			/*NOTE TO SELF: check what this function does, write comment*/
+			/*Perform a P operation on a semaphore*/
+			/*NOTE TO SELF: write a better comment*/
 			passeren(); }
 			
 		/*SYS4 Verhogen*/	
 		case VERHOGEN: {
-			/*NOTE TO SELF: check what this function does, write comment*/
+			/*Perform a V operation on a semaphore*/
+			/*NOTE TO SELF: write a better comment*/
 			verhogen(); }
 			
 		/*SYS5 Wait for IO*/
@@ -51,8 +54,8 @@ public void syscallHandler(int syscallCode)
 		case GETCPUT: {
 			/*Assigns [s_v0] of currentProc to its own time value*/
 			currentProc->p_s.s_v0 = currentProc->p_time;
-			/*Adds the value of [WORDLEN] to currentProc's [s_pc]*/
-			/*NOTE TO SELF: variables in brackets should be checked to make better comments*/
+			/*Increment pc to avoid Syscall loop*/
+			/*NOTE TO WILL: thingy to change*/
 			currentProc->p_s.s_pc + WORDLEN;
 			/*Creates a new state based on the state of the current Proc*/
 			newState(&procState); }
@@ -94,7 +97,8 @@ public void createProcess() {
 	newProc -> p_time = 0;
 	/*Initializes the new process in the "ready" state, rather than a blocked state*/
 	newProc -> p_semAdd = NULL;
-	/*Increment pc to avoid syscall loop*/
+	/*Increment pc to avoid Syscall loop*/
+	/*NOTE TO WILL: a thingy to change*/
 	currentProc->p_s.s_pc + WORDLEN;
 }
 
@@ -106,62 +110,105 @@ public void terminateProcess(pcb_PTR current) {
 		/*Recurses, using the current node's child as a parameter input*/
 		terminateProcess(current->p_child);
 	}
+	
+	/*Checks if the inputted parameter is the current process*/
 	if(current == currentProc)
 	{	
+		/*Disconnect current from its parent*/
 		outChild(current);
 	}
+	
+	/*Checks if current's semaphore address is NULL*/
 	if(current->p_semAdd == NULL)
-	{
+	{	
+		/*Remove current from the ready queue*/
 		outProcQ(&readyQ, current);
 	}
+	
+	/*Checks if current PCB is waiting for I/O*/
 	if(current->p_semAdd >= &devSem[0] && current->p_semAdd <= &clockSem)
 	{
+		/*Copies current's semaphore address to a seperate integer variable*/
+		/*NOTE TO SELF: figure out why*/
 		int semAdd = current->p_semAdd;
+		/*Remove semAdd (current?) from the process queue, returning its pointer*/
+		/*NOTE TO SELF: double check*/
 		pcb_PTR p = outBlocked(semAdd);
+		/*While p is not NULL*/
 		while(p != NULL)
 		{
+			/*Decrement count of soft blocked items*/
 			softBlockCount--;
+			/*Remove semAdd (current?) from the process queue, returning its pointer*/
 			p = outBlocked(semAdd);
 		}
 	}
+	/*Add current to the free PCB list*/
+	/*NOTE TO SELF: double check*/
 	freePcb(current); 
 }
 
+/*Performs a P operation on a semaphore*/
+/*NOTE TO SELF: really need to figure out what this means*/
 public void passeren() {
+	/*Current process' a1 value is decremented by one*/
 	currentProc -> p_s.a1--;
+	/*Checks if current process' a1 value is below 0*/
 	if(currentProc->p_s.a1 < 0)
 	{
+		/*Add current process to ASL*/
+		/*NOTE TO SELF: Double check*/
 		insertBlocked(&(currentProc->p_s.a1), p);
+		/*Call the scheduler*/
 		scheduler();
 	}
 	else {
+		/*Increment pc to avoid Syscall loop*/
+		/*NOTE TO WILL: thingy to change*/
 		currentProc->p_s.s_pc + WORDLEN;
+		/*Initializes new state based on current process' status*/
 		newState(&(currentProc->p_s));
 	}
 	
 }
 
+/*Performs a V operation on a semaphore*/
+/*NOTE TO SELF: find out what this means*/
 public void verhogen() {
+	/*Increment current process' a1 value*/
 	currentProc->p_s.a1++;
+	/*Check if the current process' a1 value is at or above 0*/
 	if(currentProc->p_s.a1 >= 0)
 	{
+		/*Remove current process from ASL, storing pointer in p*/
+		/*NOTE TO SELF: double check*/
 		p = removeBlocked(&(currentProc->p_s.a1));
+		/*Checks if p has a value*/
 		if(p != NULL)
 		{
+			/*Adds current process to the ready queue*/
 			insertProcQ(&readyQ, p);
 		}
 		
 	}
 }
 
+/*Waits for input or output from a device*/
 public void waitForDevice() {
-	
+	/*Sets line number to the current process' a1 value*/
 	int lineNo = currentProc->p_s.a1;
+	/*Sets device number to the current process' a2 value*/
 	int devNo = currentProc->p_s.a2;
+	/*Sets device index as the line number multiplied by device number incremented by one*/
 	int devIndex = (lineNo)*devNo+1;
+	/*Sets device semaphore as [...]*/
+	/*NOTE TO SELF: figure out what this does*/
 	int devSem = deviceSema4s[devIndex];
+	/*Set current process' a1 value to the device semaphore*/
 	currentProc->p_s.a1 = devSem;
+	/*Switch the state of the current process*/
 	switchState(currentProc->p_s);
+	/*Perform a P operation on current process*/
 	passeren();
 }
 
