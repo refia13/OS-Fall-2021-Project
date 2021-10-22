@@ -20,7 +20,6 @@ public void syscallHandler(int syscallCode)
 	}
 	
 	/*Switch case using parameter value to determine current syscall code, then calls other methods to act*/
-	/*NOTE TO WILL: Are breaks needed for cleanliness/to prevent redundant case checking? Also might move code descriptions for clarity*/
 	switch(syscallCode) 
 	{
 		/*SYS1 Create Process*/
