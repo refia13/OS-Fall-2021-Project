@@ -52,22 +52,27 @@ public void syscallHandler(int syscallCode)
 			
 		/*SYS6 Get CPU Time*/
 		case GETCPUT: {
-			/*Assigns [s_v0] of currentProc to its own time value*/
+			/*Accumulated processor time is plced in the current process' v0 register*/
 			currentProc->p_s.s_v0 = currentProc->p_time;
 			/*Increment pc to avoid Syscall loop*/
 			/*NOTE TO WILL: thingy to change*/
 			currentProc->p_s.s_pc + WORDLEN;
-			/*Creates a new state based on the state of the current Proc*/
+			/*Creates a new state based on the state of the current process*/
 			newState(&procState); }
 			
 		/*SYS7 Wait for Clock*/
 		case WAITFORCLOCK: {
+			/*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
 			waitForClock(); }
 			
 		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
+			/*Stores pointer for current process' support structure in register v0*/
 			currentProc->p_s.s_v0 = currentProc->p_support;
+			/*Increment pc to avoid Syscall loop*/
+			/*NOTE TO WILL: thingy to change*/
 			currentProc->p_s.s_pc + WORDLEN;
+			/*Creates new state for current process*/
 			newState(&procState); }
 			
 		/*Sycall code is greater than 8*/
@@ -212,16 +217,25 @@ public void waitForDevice() {
 	passeren();
 }
 
+/*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
 public void waitForClock() {
+	/*Set current process' a1 register to the pseudo-clock semaphore*/
 	currentProc->p_s.a1 = clockSem;
+	/*Block the current process*/
 	switchState(currentProc->p_s);
+	/*Perform a P operation on the current process*/
 	passeren();
 }
 
 void uTLB_RefillHandler() {
+	/*Sets the highest entry value to 2,147,483,648*/
 	setENTRYHI (0x80000000);
+	/*Sets the lowest entry value to 0*/
 	setENTRYLO (0x00000000);
+	/*NOTE TO SELF: find out what this does*/
 	TLBWR();
+	/*Creates a new state*/
+	/*NOTE TO SELF: needs more detail*/
 	newState((state_PTR) 0x0FFFF000);
 }
 
@@ -230,11 +244,16 @@ void passUpOrDie()
 	/*Support_t is not NULL*/
 	if(currentProc->support_t != NULL) {
 		/*Pass Up*/
+		/*The current process' exception state is modified*/
+		/*NOTE TO SELF: details needed*/
 		currentProc->p_support->sup_exceptState[0] = (state_PTR) EXCEPTSTATEADDR;
+		/*NOTE TO SELF: figure out wtf this does*/
 		LDCXT(currentProc->p_support->sup_exceptContext);
 	}
 	else {/*Die*/
+		/*Orphan the current process*/
 		outChild(currentProc); 
+		/*Terminate the current process*/
 		terminateProcess(currentProc); }
 }
 
