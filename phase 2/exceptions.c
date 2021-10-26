@@ -15,7 +15,7 @@ public void syscallHandler(int syscallCode)
 	/*Checks current state of program, to see if currently in user mode*/
 	if(currentProc->p_s.s_status & KUPON)
 	{
-		/*Attempted a syscall in user mode, triggger a program trap*/
+		/*Attempted a syscall in user mode, trigger a program trap*/
 		programTrap();
 	}
 	
@@ -35,29 +35,28 @@ public void syscallHandler(int syscallCode)
 		/*SYS3 Passaren*/
 		case PASSEREN: {
 			/*Perform a P operation on a semaphore*/
-			/*NOTE TO SELF: write a better comment*/
+			/*Decrement semaphore, then cause process to wait if semaphore is less than zero*/
 			passeren(); }
 			
 		/*SYS4 Verhogen*/	
 		case VERHOGEN: {
 			/*Perform a V operation on a semaphore*/
-			/*NOTE TO SELF: write a better comment*/
+			/*Increments semaphore, and if greater than or equal to zero, grants process permission to function*/
 			verhogen(); }
 			
 		/*SYS5 Wait for IO*/
 		case WAITFORIO: {
-			/*Waits for input or output from a device*/
-			/*NOTE TO SELF: check what this function does, write better comment*/
+			/*Puts calling process on hold until it recieves input or output from a device*/
 			waitForDevice(); }
 			
 		/*SYS6 Get CPU Time*/
 		case GETCPUT: {
-			/*Accumulated processor time is plced in the current process' v0 register*/
+			/*Accumulated processor time is placed in the current process' v0 register*/
 			currentProc->p_s.s_v0 = currentProc->p_time;
 			/*Increment pc to avoid Syscall loop*/
 			/*NOTE TO WILL: thingy to change*/
 			currentProc->p_s.s_pc + WORDLEN;
-			/*Creates a new state based on the state of the current process*/
+			/*Loads a new state and returns control to the current process*/
 			newState(&procState); }
 			
 		/*SYS7 Wait for Clock*/
@@ -72,7 +71,7 @@ public void syscallHandler(int syscallCode)
 			/*Increment pc to avoid Syscall loop*/
 			/*NOTE TO WILL: thingy to change*/
 			currentProc->p_s.s_pc + WORDLEN;
-			/*Creates new state for current process*/
+			/*Loads new state for current process*/
 			newState(&procState); }
 			
 		/*Sycall code is greater than 8*/
@@ -149,20 +148,17 @@ public void terminateProcess(pcb_PTR current) {
 		}
 	}
 	/*Add current to the free PCB list*/
-	/*NOTE TO SELF: double check*/
 	freePcb(current); 
 }
 
 /*Performs a P operation on a semaphore*/
-/*NOTE TO SELF: really need to figure out what this means*/
 public void passeren() {
 	/*Current process' a1 value is decremented by one*/
 	currentProc -> p_s.a1--;
 	/*Checks if current process' a1 value is below 0*/
 	if(currentProc->p_s.a1 < 0)
 	{
-		/*Add current process to ASL*/
-		/*NOTE TO SELF: Double check*/
+		/*Add current process to the waiting list*/
 		insertBlocked(&(currentProc->p_s.a1), p);
 		/*Call the scheduler*/
 		scheduler();
@@ -171,22 +167,20 @@ public void passeren() {
 		/*Increment pc to avoid Syscall loop*/
 		/*NOTE TO WILL: thingy to change*/
 		currentProc->p_s.s_pc + WORDLEN;
-		/*Initializes new state based on current process' status*/
+		/*Loads new state for current process*/
 		newState(&(currentProc->p_s));
 	}
 	
 }
 
 /*Performs a V operation on a semaphore*/
-/*NOTE TO SELF: find out what this means*/
 public void verhogen() {
 	/*Increment current process' a1 value*/
 	currentProc->p_s.a1++;
 	/*Check if the current process' a1 value is at or above 0*/
 	if(currentProc->p_s.a1 >= 0)
 	{
-		/*Remove current process from ASL, storing pointer in p*/
-		/*NOTE TO SELF: double check*/
+		/*Remove current process from waiting list, storing pointer in p*/
 		p = removeBlocked(&(currentProc->p_s.a1));
 		/*Checks if p has a value*/
 		if(p != NULL)
@@ -206,8 +200,7 @@ public void waitForDevice() {
 	int devNo = currentProc->p_s.a2;
 	/*Sets device index as the line number multiplied by device number incremented by one*/
 	int devIndex = (lineNo)*devNo+1;
-	/*Sets device semaphore as [...]*/
-	/*NOTE TO SELF: figure out what this does*/
+	/*Stores device semaphore for ease of use*/
 	int devSem = deviceSema4s[devIndex];
 	/*Set current process' a1 value to the device semaphore*/
 	currentProc->p_s.a1 = devSem;
@@ -232,10 +225,9 @@ void uTLB_RefillHandler() {
 	setENTRYHI (0x80000000);
 	/*Sets the lowest entry value to 0*/
 	setENTRYLO (0x00000000);
-	/*NOTE TO SELF: find out what this does*/
+	/*TLB Refill function*/
 	TLBWR();
-	/*Creates a new state*/
-	/*NOTE TO SELF: needs more detail*/
+	/*Loads new state for current process*/
 	newState((state_PTR) 0x0FFFF000);
 }
 
@@ -244,10 +236,9 @@ void passUpOrDie()
 	/*Support_t is not NULL*/
 	if(currentProc->support_t != NULL) {
 		/*Pass Up*/
-		/*The current process' exception state is modified*/
-		/*NOTE TO SELF: details needed*/
+		/*Stores exception state in current support structure*/
 		currentProc->p_support->sup_exceptState[0] = (state_PTR) EXCEPTSTATEADDR;
-		/*NOTE TO SELF: figure out wtf this does*/
+		/*Load context function to pass current process up a level*/
 		LDCXT(currentProc->p_support->sup_exceptContext);
 	}
 	else {/*Die*/
