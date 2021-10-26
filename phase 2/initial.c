@@ -1,5 +1,5 @@
 /*This module initializes the nucleus of the PAND OS*/
-
+/*Included files for use within initial.c*/
 #include "../h/const.h"
 #include "../h/types.h"
 #include "../h/pcb.h"
@@ -7,14 +7,23 @@
 #include "../h/initial.h"
 #include "../h/scheduler.h"
 
+/*The number of processes that exist*/
 static extern int processCount;
+/*The number of blocked processes that exist*/
 static extern int blockedCount;
+/*A pointer for the initialization of the ready queue*/
 static extern pcb_PTR readyQ;
+/*A pointer to the current process*/
 static extern pcb_PTR currentProc;
+/*The number of semaphores*/
 static int semCount = 49;
+/*An array containing semaphores assigned or corresponding to devices for syncronization, initialized to zero*/
 static extern int deviceSema4s[semCount];
+/*Stored in the first process, defined later*/
 void extern test();
+/*Stores current TOD, used for timekeeping*/
 static extern int startTod;
+/*Pseudoclock semaphore alias for ease of access*/
 #define clockSem deviceSema4s[semCount-1]
 
 /*
