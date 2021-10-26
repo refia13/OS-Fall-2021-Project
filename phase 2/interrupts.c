@@ -58,30 +58,51 @@ void nonTimerInterrupt(devregarea_t devRegA*, int lineNo) {
 		devNo = 5
 	else if(devNoMap & DEV6)
 		devNo = 6
-	else if(devNoMap & DEV7)
+	else
 		devNo = 7
 	exceptionState = (state_ptr) EXCEPTSTATEADDR;
 	/*Calculate the address for the device register*/
 	devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
-	int devIndex = (lineNo)*devNo+1;
-	int devSem = deviceSema4s[devIndex];
+	int devIndex = ((lineNo - 3) * 8) + (devNo);
+	
 	device_t *devReg = (*device_t) devAddrBase;
-	/*save off the status code from the device register*/
-		unsigned int statusCode = devReg->d_status;
-	/*ACK the Interrupt*/
-		devReg->d_command = ACK;
-	/*Perform a V operation on the device semaphore*/
-		pcb_PTR p;
-		devSem++;
-		if(devSem >= 0)
+	
+	/*special case device is a terminal*/
+	if(lineNo == 7)
+	{
+		/*Check if Transmit is interrupting*/
+		if(devReg->t_transm_status == READY)
 		{
-			p = removeBlocked(&devSem);
-			if(p == NULL)
-			{
+			statusCode = devReg-> t_transm_status;
+			devReg->t_transm_command = ACK;
+			devIndex = devIndex + 8; /*devIndex is alterred so that it is for a transm devSem*/
+		}
+		else {
+			statusCode = devReg-> t_recv_status;
+			devReg->t_recv_command = ACK;
+		}
+		
+	}
+	/*Not a terminal*/
+	else {
+	/*save off the status code from the device register*/
+	unsigned int statusCode = devReg->d_status;
+	/*ACK the Interrupt*/
+	devReg->d_command = ACK;
+	}
+	int devSem = deviceSema4s[devIndex];
+	/*Perform a V operation on the device semaphore*/
+	pcb_PTR p;
+	devSem++;
+	if(devSem >= 0)
+	{
+		p = removeBlocked(&devSem);
+		if(p == NULL)
+		{
 				exceptionState->s_pc+= PCINCREMENT;
 				switchState(&exceptionState);
-			}
 		}
+	}
 	/*Place the stored off status code in v0*/
 	p->p_s.s_v0 = statusCode;
 	/*Insert the newly unblocked pcb onto the readyQ*/
@@ -98,14 +119,18 @@ void nonTimerInterrupt(devregarea_t devRegA*, int lineNo) {
 
 
 void pltInterrupt() {
+
+	int stopTod;
 	/*ACK the Interrupt*/
 	setTimer(TIMESLICE);
+	STCK(stopTod);
 	/*copy the processor state*/
 	state_ptr exceptionState = (state_ptr) EXCEPTSTATEADDR;
 	currentProc->p_s = exceptionState;
-	
+	currentProc->p_time = (stopTod - startTod);
 	/*place currentProc on the readyQ*/
 	insertProcQ(&readyQ, currentProc);
+	currentProc = NULL;
 	/*call the scheduler*/
 	scheduler();
 }

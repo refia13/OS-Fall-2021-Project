@@ -25,7 +25,8 @@
 #define	FALSE			    0
 #define HIDDEN			  static
 #define EOS				    '\0'
-
+#define ON			    1
+#define OFF
 #define NULL 			    ((void *)0xFFFFFFFF)
 
 /* device interrupts */

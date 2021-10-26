@@ -14,18 +14,21 @@ static extern pcb_PTR currentProc;
 static int semCount = 49;
 static extern int deviceSema4s[semCount];
 void extern test();
-#define clockSem deviceSema4s[semCount]
+static extern int startTod;
+#define clockSem deviceSema4s[semCount-1]
 
 /*
 This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
 and 
 */
 public int main() {
-
+	
 	/*Populate the Processor 0 pass Up Vector*/
 	static passUpVector_t pv = (memaddr) PASSUPVECTOR;
 	pv->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
 	pv->tlb_refll_stackPtr = (memaddr) STACKADDRESS;
+	
+	STCK(startTod);
 	
 	/*Set the nucleus exception handler*/
 	pv->exception_handler = (memaddr) genExceptionHandler;
