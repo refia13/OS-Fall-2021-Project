@@ -42,5 +42,6 @@ public void scheduler() {
 
 /*Loads processor state based on the given state pointer*/
 public int newState(state_PTR s) {
+	/*Load state function*/
 	LDST(*s);
 }
