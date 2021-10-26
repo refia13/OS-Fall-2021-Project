@@ -26,7 +26,7 @@
 #define HIDDEN			  static
 #define EOS				    '\0'
 #define ON			    1
-#define OFF
+#define OFF                        0
 #define NULL 			    ((void *)0xFFFFFFFF)
 
 /* device interrupts */
@@ -143,5 +143,6 @@
 
 /*Mneumonic Constants*/
 #define PCINCREMENT 4
+#define SEMCOUNT 49
 
 #endif

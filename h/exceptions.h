@@ -15,6 +15,8 @@
 #include "../h/types.h"
 
 extern void syscallHandler(int syscallCode);
+extern void programTrapHandler();
+extern void passUpOrDie(unsigned int exceptCode);
 
 /*******************************************************************/
 

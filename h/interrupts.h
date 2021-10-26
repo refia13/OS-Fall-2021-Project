@@ -14,7 +14,7 @@
 
 #include "../h/types.h"
 
-extern void interruptHandler(state_ptr exceptionsState);
+extern void interruptHandler(state_PTR exceptionsState);
 
 /*******************************************************************/
 

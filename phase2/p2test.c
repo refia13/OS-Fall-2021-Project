@@ -497,13 +497,13 @@ void p5sys() {
 	unsigned int p5status = pFiveSupport.sup_exceptState[GENERALEXCEPT].s_status;
 	p5status = (p5status << 28) >> 31; 
 	switch(p5status) {
-	case ON:
+	case ON: {
 		print("High level SYS call from user mode process\n");
-		break;
+		break; }
 	
-	case OFF:
+	case OFF: {
 		print("High level SYS call from kernel mode process\n");
-		break;
+		break; }
 	}
 	pFiveSupport.sup_exceptState[GENERALEXCEPT].s_pc = pFiveSupport.sup_exceptState[GENERALEXCEPT].s_pc + 4;   /*	 to avoid SYS looping */
 	LDST(&(pFiveSupport.sup_exceptState[GENERALEXCEPT]));
