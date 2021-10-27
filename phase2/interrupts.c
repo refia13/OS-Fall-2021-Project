@@ -12,37 +12,38 @@
 void interruptHandler(state_PTR interruptState) {
 	
 	int cause = interruptState->s_cause;
-	devregarea_t devrega = (*devregarea_t) BUSADDRESS;
+	devregarea_t *devrega = RAMBASEADDR;
 	if(cause & ITINTERRUPT)
 	{
-		itInterrupt(&devrega);
+		itInterrupt();
 	}
 	if(cause & PLTINTERRUPT)
 	{
-		pltInterrupt(&devrega);
+		pltInterrupt();
 	}
 	if(cause & DISKINTERRUPT)
 	{
-		nonTimerInterrupt(&devrega, DISKINTERRUPT);
+		nonTimerInterrupt(devrega, DISKINTERRUPT);
 	}
 	if(cause & FLASHINTERRUPT)
 	{
-		nonTimerInterrupt(&devrega, FLASHINTERRUPT);
+		nonTimerInterrupt(devrega, FLASHINTERRUPT);
 	}
 	if(cause & PRINTERINTERRUPT)
 	{
-		nonTimerInterrupt(&devrega, PRINTERINTERRUPT);
+		nonTimerInterrupt(devrega, PRINTERINTERRUPT);
 	}
 	if(cause & TERMINTERRUPT)
 	{
-		nonTimerInterrupt(&devrega, TERMINTERUPT);
+		nonTimerInterrupt(devrega, TERMINTERRUPT);
 	}
 	
 }
 
-void nonTimerInterrupt(devregarea_t devRegA*, int lineNo) {
+void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 
 	/*Determine which deviceNo is interrupting*/
+	int devNo;
 	unsigned int devNoMap = devRegA-> interrupt_dev[lineNo];
 	if(devNoMap & DEV0)
 		devNo = 0;
@@ -55,18 +56,18 @@ void nonTimerInterrupt(devregarea_t devRegA*, int lineNo) {
 	else if(devNoMap & DEV4)
 		devNo = 4;
 	else if(devNoMap & DEV5)
-		devNo = 5
+		devNo = 5;
 	else if(devNoMap & DEV6)
-		devNo = 6
+		devNo = 6;
 	else
-		devNo = 7
-	exceptionState = (state_ptr) EXCEPTSTATEADDR;
+		devNo = 7;
+	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
 	/*Calculate the address for the device register*/
-	devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
+	memaddr devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
 	int devIndex = ((lineNo - 3) * 8) + (devNo);
 	
-	device_t *devReg = (*device_t) devAddrBase;
-	
+	device_t *devReg = devAddrBase;
+	int statusCode;
 	/*special case device is a terminal*/
 	if(lineNo == 7)
 	{
@@ -100,7 +101,7 @@ void nonTimerInterrupt(devregarea_t devRegA*, int lineNo) {
 		if(p == NULL)
 		{
 				exceptionState->s_pc+= PCINCREMENT;
-				switchState(&exceptionState);
+				switchState(exceptionState);
 		}
 	}
 	/*Place the stored off status code in v0*/
@@ -110,8 +111,8 @@ void nonTimerInterrupt(devregarea_t devRegA*, int lineNo) {
 	/*Return control to the current Process. Perform a LDST on the saved exception state*/
 	exceptionState->s_pc += PCINCREMENT;
 	switchState(exceptionState);
-	}
 }
+
 
 
 
@@ -122,8 +123,8 @@ void pltInterrupt() {
 	setTimer(TIMESLICE);
 	STCK(stopTod);
 	/*copy the processor state*/
-	state_ptr exceptionState = (state_ptr) EXCEPTSTATEADDR;
-	currentProc->p_s = exceptionState;
+	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
+	currentProc->p_s = *exceptionState;
 	currentProc->p_time = (stopTod - startTod);
 	/*place currentProc on the readyQ*/
 	insertProcQ(&readyQ, currentProc);
@@ -134,10 +135,11 @@ void pltInterrupt() {
 
 void itInterrupt()
 {
-	state_ptr exceptionState = (state_ptr) EXCEPTSTATEADDR;
+	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
 	/*ACK the Interrupt by loading 100 milliseconds onto the interval timer*/
 	LDIT(ITSECOND);
 	/*Unblock ALL Pcbs blocked on clockSem*/
+	pcb_PTR p;
 	p = removeBlocked(&clockSem);
 	while(p != NULL)
 	{

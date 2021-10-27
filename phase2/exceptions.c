@@ -8,15 +8,16 @@
 #include "../h/exceptions.h"
 #include "../h/scheduler.h"
 #include "../h/interrupts.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 /*Single parameter method to handle syscalls*/
-public void syscallHandler(int syscallCode)
+void syscallHandler(int syscallCode)
 {
 	/*Checks current state of program, to see if currently in user mode*/
 	if(currentProc->p_s.s_status & KUPON)
 	{
 		/*Attempted a syscall in user mode, triggger a program trap*/
-		programTrap();
+		programTrapHandler();
 	}
 	
 	/*Switch case using parameter value to determine current syscall code, then calls other methods to act*/
@@ -56,9 +57,9 @@ public void syscallHandler(int syscallCode)
 			currentProc->p_s.s_v0 = currentProc->p_time;
 			/*Increment pc to avoid Syscall loop*/
 			/*NOTE TO WILL: thingy to change*/
-			currentProc->p_s.s_pc + WORDLEN;
+			currentProc->p_s.s_pc += PCINCREMENT;
 			/*Creates a new state based on the state of the current process*/
-			newState(&procState); }
+			newState(&currentProc->p_s); }
 			
 		/*SYS7 Wait for Clock*/
 		case WAITFORCLOCK: {
@@ -68,30 +69,30 @@ public void syscallHandler(int syscallCode)
 		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
 			/*Stores pointer for current process' support structure in register v0*/
-			currentProc->p_s.s_v0 = currentProc->p_support;
+			currentProc->p_s.s_v0 = currentProc->p_supportStruct;
 			/*Increment pc to avoid Syscall loop*/
-			/*NOTE TO WILL: thingy to change*/
-			currentProc->p_s.s_pc + WORDLEN;
+			currentProc->p_s.s_pc += PCINCREMENT;
 			/*Creates new state for current process*/
-			newState(&procState); }
+			newState(&currentProc->p_s); }
 			
 		/*Sycall code is greater than 8*/
 		default: {			
 			/*Pass up or Die*/
-			passUpOrDie(); }
+			passUpOrDie(GENERALEXCEPT); }
 	}
 	
 
 }
 
 /*Creates a new process for use*/
-public void createProcess() {
+void createProcess() {
 	/*Creates new process by allocating PCB*/
 	pcb_PTR newProc = allocPcb();
 	/*Initializes new process' state using value pointed to by a1*/
-	newProc -> p_s = procState -> s_a1;
+	state_PTR newState = (state_PTR) currentProc->p_s.s_a1;
+	newProc -> p_s = *newState;
 	/*Initializes the support structure of the new process using value pointed to by a2*/
-	newProc -> p_supportStruct = procState -> s_a2;
+	newProc -> p_supportStruct = currentProc -> p_s.s_a2;
 	/*Inserts new process into the ready queue*/
 	insertProcQ(&readyQ,newProc);
 	/*Assigns new process as the child of the current process*/
@@ -103,12 +104,11 @@ public void createProcess() {
 	/*Initializes the new process in the "ready" state, rather than a blocked state*/
 	newProc -> p_semAdd = NULL;
 	/*Increment pc to avoid Syscall loop*/
-	/*NOTE TO WILL: a thingy to change*/
-	currentProc->p_s.s_pc + WORDLEN;
+	currentProc->p_s.s_pc += PCINCREMENT;
 }
 
 /*Terminate the current process, and all of its children*/
-public void terminateProcess(pcb_PTR current) {
+void terminateProcess(pcb_PTR current) {
 	/*Checks if the current node has a child*/
 	while(!emptyChild(current)) 
 	{
@@ -131,21 +131,19 @@ public void terminateProcess(pcb_PTR current) {
 	}
 	
 	/*Checks if current PCB is waiting for I/O*/
-	if(current->p_semAdd >= &devSem[0] && current->p_semAdd <= &clockSem)
+	if(current->p_semAdd >= &deviceSema4s[0] && current->p_semAdd <= &clockSem)
 	{
 		/*Copies current's semaphore address to a seperate integer variable*/
-		/*NOTE TO SELF: figure out why*/
-		int semAdd = current->p_semAdd;
 		/*Remove semAdd (current?) from the process queue, returning its pointer*/
 		/*NOTE TO SELF: double check*/
-		pcb_PTR p = outBlocked(semAdd);
+		pcb_PTR p = outBlocked(current);
 		/*While p is not NULL*/
 		while(p != NULL)
 		{
 			/*Decrement count of soft blocked items*/
 			softBlockCount--;
 			/*Remove semAdd (current?) from the process queue, returning its pointer*/
-			p = outBlocked(semAdd);
+			p = outBlocked(current);
 		}
 	}
 	/*Add current to the free PCB list*/
@@ -155,22 +153,23 @@ public void terminateProcess(pcb_PTR current) {
 
 /*Performs a P operation on a semaphore*/
 /*NOTE TO SELF: really need to figure out what this means*/
-public void passeren() {
+void passeren() {
 	/*Current process' a1 value is decremented by one*/
-	currentProc -> p_s.a1--;
-	/*Checks if current process' a1 value is below 0*/
-	if(currentProc->p_s.a1 < 0)
+	currentProc -> p_s.s_a1--;
+	/*Checks if current process' semaphore value is below 0*/
+	if(currentProc->p_s.s_a1 < 0)
 	{
 		/*Add current process to ASL*/
 		/*NOTE TO SELF: Double check*/
-		insertBlocked(&(currentProc->p_s.a1), p);
+		insertBlocked(&(currentProc->p_s.s_a1), currentProc);
 		/*Call the scheduler*/
+		currentProc = NULL;
 		scheduler();
 	}
 	else {
 		/*Increment pc to avoid Syscall loop*/
 		/*NOTE TO WILL: thingy to change*/
-		currentProc->p_s.s_pc + WORDLEN;
+		currentProc->p_s.s_pc += PCINCREMENT;
 		/*Initializes new state based on current process' status*/
 		newState(&(currentProc->p_s));
 	}
@@ -179,15 +178,15 @@ public void passeren() {
 
 /*Performs a V operation on a semaphore*/
 /*NOTE TO SELF: find out what this means*/
-public void verhogen() {
+void verhogen() {
 	/*Increment current process' a1 value*/
-	currentProc->p_s.a1++;
+	currentProc->p_s.s_a1++;
 	/*Check if the current process' a1 value is at or above 0*/
-	if(currentProc->p_s.a1 >= 0)
+	if(currentProc->p_s.s_a1 >= 0)
 	{
 		/*Remove current process from ASL, storing pointer in p*/
 		/*NOTE TO SELF: double check*/
-		p = removeBlocked(&(currentProc->p_s.a1));
+		pcb_PTR p = removeBlocked(&(currentProc->p_s.s_a1));
 		/*Checks if p has a value*/
 		if(p != NULL)
 		{
@@ -199,27 +198,27 @@ public void verhogen() {
 }
 
 /*Waits for input or output from a device*/
-public void waitForDevice() {
+void waitForDevice() {
 	/*Sets line number to the current process' a1 value*/
-	int lineNo = currentProc->p_s.a1;
+	int lineNo = currentProc->p_s.s_a1;
 	/*Sets device number to the current process' a2 value*/
-	int devNo = currentProc->p_s.a2;
+	int devNo = currentProc->p_s.s_a2;
 	/*Sets device index as the line number multiplied by device number incremented by one*/
-	int devIndex = (lineNo)*devNo+1;
+	int devIndex = (lineNo-3)*8 + devNo;
 	/*Set current process' a1 value to the device semaphore*/
-	currentProc->p_s.a1 = deviceSema4s[devIndex];
+	currentProc->p_s.s_a1 = deviceSema4s[devIndex];
 	/*Switch the state of the current process*/
-	switchState(currentProc->p_s);
+	switchState(&currentProc->p_s);
 	/*Perform a P operation on current process*/
 	passeren();
 }
 
 /*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
-public void waitForClock() {
+void waitForClock() {
 	/*Set current process' a1 register to the pseudo-clock semaphore*/
-	currentProc->p_s.a1 = clockSem;
+	currentProc->p_s.s_a1 = clockSem;
 	/*Block the current process*/
-	switchState(currentProc->p_s);
+	switchState(&currentProc->p_s);
 	/*Perform a P operation on the current process*/
 	passeren();
 }
@@ -236,19 +235,32 @@ void uTLB_RefillHandler() {
 	newState((state_PTR) 0x0FFFF000);
 }
 
-void passUpOrDie()
+void passUpOrDie(unsigned int passUpCase)
 {
 	/*Support_t is not NULL*/
-	if(currentProc->support_t != NULL) {
+	if(currentProc->p_supportStruct != NULL) {
 		/*Pass Up*/
 		/*The current process' exception state is modified*/
 		/*NOTE TO SELF: details needed*/
-		currentProc->p_support->sup_exceptState[0] = (state_PTR) EXCEPTSTATEADDR;
+		state_PTR exceptStatePtr = (state_PTR) EXCEPTSTATEADDR;
+		currentProc->p_supportStruct->sup_exceptState[0] = *exceptStatePtr;
+		unsigned int newPc = currentProc->p_supportStruct->sup_exceptContext[0].c_pc;
+		unsigned int newStackPtr = currentProc->p_supportStruct->sup_exceptContext[0].c_stackPtr;
+		unsigned int newStatus = currentProc->p_supportStruct->sup_exceptContext[0].c_status;
 		/*NOTE TO SELF: figure out wtf this does*/
-		LDCXT(currentProc->p_support->sup_exceptContext);
+		LDCXT(newStackPtr, newStatus, newPc);
 	}
 	else {/*Die*/
 		/*Terminate the current process*/
 		terminateProcess(currentProc); }
+}
+/*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value GENERALEXCEPT*/
+void programTrapHandler() {
+
+	passUpOrDie(GENERALEXCEPT);
+}
+/*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value PGFAULTEXCEPT*/
+void tlbExceptionHandler() {
+	passUpOrDie(PGFAULTEXCEPT);
 }
 

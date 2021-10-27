@@ -48,10 +48,10 @@
 #define DATA1			    3
 
 /* device register field number for terminal devices */
-#define RECVSTATUS  	0
-#define RECVCOMMAND 	1
-#define TRANSTATUS  	2
-#define TRANCOMMAND 	3
+#define RECVSTATUS  		0
+#define RECVCOMMAND 		1
+#define TRANSTATUS  		2
+#define TRANCOMMAND 		3
 
 /* device common STATUS codes */
 #define UNINSTALLED		0
@@ -63,17 +63,17 @@
 #define ACK				    1
 
 /* Memory related constants */
-#define KSEG0           0x00000000
-#define KSEG1           0x20000000
-#define KSEG2           0x40000000
-#define KUSEG           0x80000000
-#define RAMSTART        0x20000000
-#define BIOSDATAPAGE    0x0FFFF000
-#define PASSUPVECTOR	 0x0FFFF900
+#define KSEG0           	0x00000000
+#define KSEG1           	0x20000000
+#define KSEG2           	0x40000000
+#define KUSEG           	0x80000000
+#define RAMSTART        	0x20000000
+#define BIOSDATAPAGE    	0x0FFFF000
+#define PASSUPVECTOR	 	0x0FFFF900
 
 /* Exceptions related constants */
-#define	PGFAULTEXCEPT	  0
-#define GENERALEXCEPT	  1
+#define	PGFAULTEXCEPT	  	0
+#define GENERALEXCEPT	  	1
 
 /* Pcb Constants */
 #define MAXPROC		20
@@ -90,59 +90,59 @@
 #define STCK(T) ((T) = ((* ((cpu_t *) TODLOADDR)) / (* ((cpu_t *) TIMESCALEADDR))))
 
 /*Time Constants*/
-#define ITSECOND 10000
-#define TIMESLICE 5000
+#define ITSECOND 	100000
+#define TIMESLICE 	5000
 
 /*BIT Patterns*/
-#define ALLOFF 0x00000000
-#define IMON 0x0000FF00
-#define TEON 0x08000000
-#define IECON 0x00000001
-#define IEPON 0x00000004
-#define KUPON 0x00000008
-#define EXMASK 0x0000007C
-#define ITINTERRUPT 0x00000200
-#define PLTINTERRUPT 0x00000400
-#define DISKINTERRUPT 0x00000800
-#define FLASHINTERRUPT 0x00001000
-#define PRINTERINTERRUPT 0x00004000
-#define TERMINTERRUPT 0x00008000
+#define ALLOFF 	0
+#define IMON 	0x0000FF00
+#define TEON 	0x08000000
+#define IECON 	0x00000001
+#define IEPON 	0x00000004
+#define KUPON 	0x00000008
+#define EXMASK 	0x0000007C
+#define ITINTERRUPT 	0x00000200
+#define PLTINTERRUPT 	0x00000400
+#define DISKINTERRUPT 	0x00000800
+#define FLASHINTERRUPT 	0x00001000
+#define PRINTERINTERRUPT 	0x00004000
+#define TERMINTERRUPT 	0x00008000
 
 /*Device Interrupt Masks*/
-#define DEV0 0x00000000
-#define DEV1 0x00000002
-#define DEV2 0x00000004
-#define DEV3 0x00000008
-#define DEV4 0x00000010
-#define DEV5 0x00000020
-#define DEV6 0x00000040
-#define DEV7 0x00000080
+#define DEV0 	0x00000000
+#define DEV1 	0x00000002
+#define DEV2 	0x00000004
+#define DEV3 	0x00000008
+#define DEV4 	0x00000010
+#define DEV5 	0x00000020
+#define DEV6 	0x00000040
+#define DEV7 	0x00000080
 
 /*Exception related Constants*/
-#define PGFAULTEXCEPT 0
-#define GENERALEXEPT 1
-#define SYSCALLEXCEPT 8
-#define IOEXCEPT 0
+#define PGFAULTEXCEPT 	0
+#define GENERALEXEPT 	1
+#define SYSCALLEXCEPT 	8
+#define IOEXCEPT 	0
 #define TLBREFILLEXCEPT 3
 
 
 /*Memory Constants*/
-#define STACKADDRESS 0x20001000
-#define EXCEPTSTATEADDR 0x0FFFF000
-#define BUSADDRESS 0x10000000
+#define STACKADDRESS 	0x20001000
+#define EXCEPTSTATEADDR 	0x0FFFF000
+#define BUSADDRESS 	0x10000000
 
 /*SYSCALL CODES*/
-#define CREATEPROCESS 1
-#define TERMPROCESS 2
-#define PASSEREN 3
-#define VERHOGEN 4
-#define WAITFORIO 5
-#define GETCPUT 6
-#define WAITFORCLOCK 7
-#define GETSUPPORTT 8
+#define CREATEPROCESS 	1
+#define TERMPROCESS 	2
+#define PASSEREN 	3
+#define VERHOGEN 	4
+#define WAITFORIO 	5
+#define GETCPUT 	6
+#define WAITFORCLOCK 	7
+#define GETSUPPORTT 	8
 
 /*Mneumonic Constants*/
-#define PCINCREMENT 4
-#define SEMCOUNT 49
+#define PCINCREMENT 	4
+#define SEMCOUNT 	49
 
 #endif

@@ -15,7 +15,7 @@
 #include "../h/types.h"
 
 extern void scheduler();
-
+extern void switchState(state_PTR newState);
 /*******************************************************************/
 
 #endif

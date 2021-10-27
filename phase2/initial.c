@@ -8,6 +8,7 @@
 #include "../h/scheduler.h"
 #include "../h/exceptions.h"
 #include "../h/interrupts.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 extern int processCount;
 extern int blockedCount;

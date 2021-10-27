@@ -9,15 +9,15 @@
 #include "/usr/include/umps3/umps/libumps.h"
 
 /*Program for the scheduler, assigns time to processes and begins their execution*/
-public void scheduler() {
+void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/
 	pcb_PTR currentProc = removeProcQ(&readyQ);
 	/*Adds 5 milliseconds to the timer*/
-	newTimer = getTIMER() + 5;
+	int newTimer = getTIMER() + TIMESLICE;
 	/*Loads 5 milisecons onto the PLT*/
 	setTIMER(newTimer);
 	/*Initializes the state of the current process*/
-	newState(currentProc->p_s);
+	switchState(&currentProc->p_s);
 	/*If there are no more processes*/
 	if(processCount == 0)
 	{
@@ -25,10 +25,11 @@ public void scheduler() {
 		HALT();
 	}
 	/*If there are any blocked processes*/
-	else if(blockedCount > 0)
+	else if(softBlockCount > 0)
 	{
 		/*currentProc->p_s->s_status bit 0 is set to 1, then set bits 8-15 to 1*/
-		currentProc -> p_s = ALLOFF | IEPON | IMON;
+		state_PTR state = (state_PTR) ((ALLOFF) | (IEPON | IMON));
+		currentProc->p_s = *state;
 		/*Twiddle Thumbs until device interrupt*/
 		WAIT();
 	}
@@ -41,6 +42,6 @@ public void scheduler() {
 }
 
 /*Loads processor state based on the given state pointer*/
-public int newState(state_PTR s) {
-	LDST(*s);
+void switchState(state_PTR s) {
+	LDST(&s);
 }
