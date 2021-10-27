@@ -59,7 +59,7 @@ void syscallHandler(int syscallCode)
 			/*NOTE TO WILL: thingy to change*/
 			currentProc->p_s.s_pc += PCINCREMENT;
 			/*Creates a new state based on the state of the current process*/
-			newState(&currentProc->p_s); }
+			switchState(&currentProc->p_s); }
 			
 		/*SYS7 Wait for Clock*/
 		case WAITFORCLOCK: {
@@ -73,7 +73,7 @@ void syscallHandler(int syscallCode)
 			/*Increment pc to avoid Syscall loop*/
 			currentProc->p_s.s_pc += PCINCREMENT;
 			/*Creates new state for current process*/
-			newState(&currentProc->p_s); }
+			switchState(&currentProc->p_s); }
 			
 		/*Sycall code is greater than 8*/
 		default: {			
