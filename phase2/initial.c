@@ -10,12 +10,8 @@
 #include "../h/interrupts.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-extern int processCount;
-extern int blockedCount;
-extern pcb_PTR readyQ;
-extern pcb_PTR currentProc;
+
 extern void test();
-extern int startTod;
 extern void uTLB_RefillHandler();
 extern int genExceptionHandler();
 
@@ -45,7 +41,7 @@ int main() {
 	initASL();
 	/*Initialize the global variables*/
 	processCount = 0;
-	blockedCount = 0;
+	softBlockCount = 0;
 	readyQ = mkEmptyProcQ();
 	currentProc = NULL;
 	int i;
@@ -85,7 +81,7 @@ int genExceptionHandler() {
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
 	if(excCode <= TLBREFILLEXCEPT)
 	{
-		uTLB_RefillHandler();
+		tlbRefillHandler();
 	}
 	/*Case 3 Code == 8: SYSCALL*/
 	if(excCode == SYSCALLEXCEPT)

@@ -223,17 +223,6 @@ void waitForClock() {
 	passeren();
 }
 
-void uTLB_RefillHandler() {
-	/*Sets the highest entry value to 2,147,483,648*/
-	setENTRYHI (0x80000000);
-	/*Sets the lowest entry value to 0*/
-	setENTRYLO (0x00000000);
-	/*NOTE TO SELF: find out what this does*/
-	TLBWR();
-	/*Creates a new state*/
-	/*NOTE TO SELF: needs more detail*/
-	newState((state_PTR) 0x0FFFF000);
-}
 
 void passUpOrDie(unsigned int passUpCase)
 {
