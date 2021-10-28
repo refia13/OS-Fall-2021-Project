@@ -9,6 +9,12 @@
 #include "../h/interrupts.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+extern unsigned int setTIMER(unsigned int t);
+void itInterrupt();
+void pltInterrupt();
+void nonTimerInterrupt(devregarea_t *devRegA, int lineNo);
+
+
 void interruptHandler(state_PTR interruptState) {
 	
 	int cause = interruptState->s_cause;
@@ -63,7 +69,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 		devNo = 7;
 	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
 	/*Calculate the address for the device register*/
-	memaddr devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
+	unsigned int devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
 	int devIndex = ((lineNo - 3) * 8) + (devNo);
 	
 	device_t *devReg = devAddrBase;
@@ -120,7 +126,7 @@ void pltInterrupt() {
 
 	int stopTod;
 	/*ACK the Interrupt*/
-	setTimer(TIMESLICE);
+	setTIMER(TIMESLICE);
 	STCK(stopTod);
 	/*copy the processor state*/
 	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;

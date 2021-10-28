@@ -8,6 +8,10 @@
 #include "../h/scheduler.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+extern void setTimer();
+extern unsigned int setTIMER(unsigned int t);
+extern void switchState(state_PTR s);
+
 /*Program for the scheduler, assigns time to processes and begins their execution*/
 void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/

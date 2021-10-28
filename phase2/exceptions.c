@@ -10,6 +10,15 @@
 #include "../h/interrupts.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+void createProcess();
+void terminateProcess(pcb_PTR current);
+void passeren();
+void verhogen();
+void waitForDevice();
+void waitForClock();
+void tlbRefillHandler();
+void programTrapHandler();
+
 /*Single parameter method to handle syscalls*/
 void syscallHandler(int syscallCode)
 {
@@ -171,7 +180,7 @@ void passeren() {
 		/*NOTE TO WILL: thingy to change*/
 		currentProc->p_s.s_pc += PCINCREMENT;
 		/*Initializes new state based on current process' status*/
-		newState(&(currentProc->p_s));
+		switchState(&(currentProc->p_s));
 	}
 	
 }

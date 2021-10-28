@@ -4,7 +4,6 @@
 #include "../h/types.h"
 #include "../h/pcb.h"
 #include "../h/asl.h"
-#include "../h/initial.h"
 #include "../h/scheduler.h"
 #include "../h/exceptions.h"
 #include "../h/interrupts.h"
@@ -14,6 +13,15 @@
 extern void test();
 extern void uTLB_RefillHandler();
 extern int genExceptionHandler();
+extern void tlbExceptionHandler();
+extern void passUpOrDie();
+int processCount;
+int softBlockCount;
+pcb_PTR readyQ;
+pcb_PTR currentProc;
+int startTod;
+int deviceSema4s[SEMCOUNT];
+int startTod;
 
 /*
 This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
@@ -81,7 +89,7 @@ int genExceptionHandler() {
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
 	if(excCode <= TLBREFILLEXCEPT)
 	{
-		tlbRefillHandler();
+		tlbExceptionHandler();
 	}
 	/*Case 3 Code == 8: SYSCALL*/
 	if(excCode == SYSCALLEXCEPT)
