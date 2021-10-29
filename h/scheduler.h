@@ -16,6 +16,7 @@
 
 extern void scheduler();
 extern void switchState(state_PTR newState);
+extern void stateCopy(state_t oldState, pcb_PTR current, int passup);
 /*******************************************************************/
 
 #endif

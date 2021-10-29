@@ -14,11 +14,11 @@ void itInterrupt();
 void pltInterrupt();
 void nonTimerInterrupt(devregarea_t *devRegA, int lineNo);
 
-
+/*General Interrupt Handler, determines the lineNo of the pending interrupt and moves into the appropriate interrupt handling function*/
 void interruptHandler(state_PTR interruptState) {
 	
 	int cause = interruptState->s_cause;
-	devregarea_t *devrega = RAMBASEADDR;
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
 	if(cause & ITINTERRUPT)
 	{
 		itInterrupt();
@@ -72,7 +72,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	unsigned int devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
 	int devIndex = ((lineNo - 3) * 8) + (devNo);
 	
-	device_t *devReg = devAddrBase;
+	device_t *devReg = (device_t*) devAddrBase;
 	int statusCode;
 	/*special case device is a terminal*/
 	if(lineNo == 7)
@@ -85,6 +85,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 			devIndex = devIndex + 8; /*devIndex is alterred so that it is for a transm devSem*/
 		}
 		else {
+			
 			statusCode = devReg-> t_recv_status;
 			devReg->t_recv_command = ACK;
 		}
@@ -93,7 +94,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	/*Not a terminal*/
 	else {
 	/*save off the status code from the device register*/
-	unsigned int statusCode = devReg->d_status;
+	statusCode = devReg->d_status;
 	/*ACK the Interrupt*/
 	devReg->d_command = ACK;
 	}
@@ -129,8 +130,10 @@ void pltInterrupt() {
 	setTIMER(TIMESLICE);
 	STCK(stopTod);
 	/*copy the processor state*/
-	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
-	currentProc->p_s = *exceptionState;
+	state_PTR oldState;
+	oldState = (state_PTR)EXCEPTSTATEADDR;
+	/*Copy oldState into currentProc->p_s*/
+	stateCopy(*oldState, currentProc, 0); 
 	currentProc->p_time = (stopTod - startTod);
 	/*place currentProc on the readyQ*/
 	insertProcQ(&readyQ, currentProc);

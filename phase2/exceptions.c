@@ -19,11 +19,18 @@ void waitForClock();
 void tlbRefillHandler();
 void programTrapHandler();
 
+void debugC(int a) {
+	int i = 0;
+	i--;
+}
+
 /*Single parameter method to handle syscalls*/
 void syscallHandler(int syscallCode)
 {
+	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	
 	/*Checks current state of program, to see if currently in user mode*/
-	if(currentProc->p_s.s_status & KUPON)
+	if(oldState->s_status & KUPON)
 	{
 		/*Attempted a syscall in user mode, triggger a program trap*/
 		programTrapHandler();
@@ -78,7 +85,7 @@ void syscallHandler(int syscallCode)
 		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
 			/*Stores pointer for current process' support structure in register v0*/
-			currentProc->p_s.s_v0 = currentProc->p_supportStruct;
+			currentProc->p_s.s_v0 = (int) currentProc->p_supportStruct;
 			/*Increment pc to avoid Syscall loop*/
 			currentProc->p_s.s_pc += PCINCREMENT;
 			/*Creates new state for current process*/
@@ -95,13 +102,14 @@ void syscallHandler(int syscallCode)
 
 /*Creates a new process for use*/
 void createProcess() {
-	/*Creates new process by allocating PCB*/
+
+	/*Creates new process by allocating PCB */
 	pcb_PTR newProc = allocPcb();
 	/*Initializes new process' state using value pointed to by a1*/
 	state_PTR newState = (state_PTR) currentProc->p_s.s_a1;
-	newProc -> p_s = *newState;
+	stateCopy(*newState, newProc, 0);
 	/*Initializes the support structure of the new process using value pointed to by a2*/
-	newProc -> p_supportStruct = currentProc -> p_s.s_a2;
+	newProc -> p_supportStruct = (support_t*) currentProc -> p_s.s_a2;
 	/*Inserts new process into the ready queue*/
 	insertProcQ(&readyQ,newProc);
 	/*Assigns new process as the child of the current process*/
@@ -188,22 +196,24 @@ void passeren() {
 /*Performs a V operation on a semaphore*/
 /*NOTE TO SELF: find out what this means*/
 void verhogen() {
-	/*Increment current process' a1 value*/
-	currentProc->p_s.s_a1++;
-	/*Check if the current process' a1 value is at or above 0*/
-	if(currentProc->p_s.s_a1 >= 0)
-	{
-		/*Remove current process from ASL, storing pointer in p*/
-		/*NOTE TO SELF: double check*/
-		pcb_PTR p = removeBlocked(&(currentProc->p_s.s_a1));
-		/*Checks if p has a value*/
-		if(p != NULL)
-		{
-			/*Adds current process to the ready queue*/
-			insertProcQ(&readyQ, p);
+	
+	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	
+	oldState->s_a1++;
+	int sema4 = oldState->s_a1;
+	pcb_PTR p;
+	if(sema4 >= 0) {
+		p = removeBlocked(&sema4);
+		if(p != NULL) {
+		insertProcQ(&readyQ, p);
 		}
-		
 	}
+	oldState->s_v0 = sema4;
+	oldState->s_pc += PCINCREMENT;
+	debugC(3);
+	
+	
+	switchState(oldState);
 }
 
 /*Waits for input or output from a device*/
@@ -241,7 +251,7 @@ void passUpOrDie(unsigned int passUpCase)
 		/*The current process' exception state is modified*/
 		/*NOTE TO SELF: details needed*/
 		state_PTR exceptStatePtr = (state_PTR) EXCEPTSTATEADDR;
-		currentProc->p_supportStruct->sup_exceptState[0] = *exceptStatePtr;
+		stateCopy(*exceptStatePtr, currentProc, 1);
 		unsigned int newPc = currentProc->p_supportStruct->sup_exceptContext[0].c_pc;
 		unsigned int newStackPtr = currentProc->p_supportStruct->sup_exceptContext[0].c_stackPtr;
 		unsigned int newStatus = currentProc->p_supportStruct->sup_exceptContext[0].c_status;
@@ -261,4 +271,6 @@ void programTrapHandler() {
 void tlbExceptionHandler() {
 	passUpOrDie(PGFAULTEXCEPT);
 }
+
+
 

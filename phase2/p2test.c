@@ -142,15 +142,18 @@ void uTLB_RefillHandler () {
 	LDST ((state_PTR) 0x0FFFF000);
 }
 
+void debugE(int a) {
 
+	int i = 0;
+	i++;
+}
 /*********************************************************************/
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test() {	
-	
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
-
+	
 	print("p1 v(testsem)\n");
 
 	/* set up states of the other processes */

@@ -22,7 +22,11 @@ pcb_PTR currentProc;
 int startTod;
 int deviceSema4s[SEMCOUNT];
 int startTod;
-
+/*Initial.c's debugFunction*/
+void debugA(int a, int b) {
+	int i = 0;
+	i++;
+}
 /*
 This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
 and 
@@ -64,11 +68,15 @@ int main() {
 	pcb_PTR tempPcb;
 	tempPcb = allocPcb();
 	/*set up the first processor state*/
-	tempPcb->p_s.s_sp = ramtop;
-	tempPcb->p_s.s_pc = (memaddr) test;
-	tempPcb->p_s.s_t9 = (memaddr) test;
-	tempPcb->p_s.s_status = ALLOFF | IEPON | IMON | TEON;
+	state_t initialState;
+	initialState.s_pc = (memaddr) test;
+	initialState.s_status = ALLOFF | IEPON | IMON | TEON;
+	initialState.s_sp = ramtop;
+	initialState.s_t9 = (memaddr) test;
+	/*StateCopy used rather than directly editing the registers for encapsulation purposes*/
+	stateCopy(initialState, tempPcb, 0);
 	insertProcQ(&readyQ,tempPcb);
+	processCount++;
 	
 	scheduler();
 	return 0;
@@ -79,8 +87,10 @@ int main() {
 int genExceptionHandler() {
 	/*Wake up in the general exception handler*/
 	/*Check Cause Exception Code*/
-	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	state_PTR oldState = (state_t*)EXCEPTSTATEADDR;
+	
 	int excCode = ((oldState->s_cause & EXMASK) >> 2);
+	debugA(oldState->s_a0,2);
 	/*Case 1 Cause Code == 0: Interrupts*/
 	if(excCode == IOEXCEPT)
 	{
@@ -104,4 +114,6 @@ int genExceptionHandler() {
 	programTrapHandler();
 	return 0;
 }
+
+
 
