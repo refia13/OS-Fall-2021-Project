@@ -133,7 +133,7 @@ void pltInterrupt() {
 	state_PTR oldState;
 	oldState = (state_PTR)EXCEPTSTATEADDR;
 	/*Copy oldState into currentProc->p_s*/
-	stateCopy(*oldState, currentProc, 0); 
+	stateCopy(oldState, &currentProc->p_s); 
 	currentProc->p_time = (stopTod - startTod);
 	/*place currentProc on the readyQ*/
 	insertProcQ(&readyQ, currentProc);

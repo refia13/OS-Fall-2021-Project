@@ -11,7 +11,7 @@
 extern void setTimer();
 extern unsigned int setTIMER(unsigned int t);
 extern void switchState(state_PTR s);
-void stateCopy(state_t oldState, pcb_PTR current, int passup);
+void stateCopy(state_PTR oldState, state_PTR newState);
 
 
 void debugB(int a, int b, int c) {
@@ -45,7 +45,7 @@ void scheduler() {
 	{
 		/*currentProc->p_s->s_status bit 0 is set to 1, then set bits 8-15 to 1*/
 		state_PTR state = (state_PTR) ((ALLOFF) | (IEPON | IMON));
-		stateCopy(*state, currentProc, 0);
+		stateCopy(state, &currentProc->p_s);
 		/*Twiddle Thumbs until device interrupt*/
 		WAIT();
 	}
@@ -65,35 +65,20 @@ void switchState(state_PTR s) {
 
 /*Performs a deep copy of the given state into the given pcb's state field, the passup parameter is used to determine whether to copy
 into the pcb's p_s field or into its supportStruct*/
-void stateCopy(state_t oldState, pcb_PTR current, int passup) {
-	if(passup == 0) /*case when normally copying a state*/
-	{
+void stateCopy(state_PTR oldState, state_PTR current) {
 		
-		current->p_s.s_cause = oldState.s_cause;
+		current->s_cause = oldState->s_cause;
 		debugB(2,3,4);
-		current->p_s.s_entryHI = oldState.s_entryHI;
+		current->s_entryHI = oldState->s_entryHI;
 		
-		current->p_s.s_pc = oldState.s_pc;
-		current->p_s.s_status = oldState.s_status;
+		current->s_pc = oldState->s_pc;
+		current->s_status = oldState->s_status;
 		int i;
 		for(i = 0; i < STATEREGNUM; i++) {
 	
-			current->p_s.s_reg[i] = oldState.s_reg[i];
+			current->s_reg[i] = oldState->s_reg[i];
 			
 		}
-	}
-	else /*case when the state needs to be copied into the pcb's supportStruct*/
-	{
-		current->p_supportStruct->sup_exceptState[0].s_cause = oldState.s_cause;
-		current->p_supportStruct->sup_exceptState[0].s_entryHI = oldState.s_entryHI;
-		current->p_supportStruct->sup_exceptState[0].s_pc = oldState.s_pc;
-		current->p_supportStruct->sup_exceptState[0].s_cause = oldState.s_status;
-		int i;
-		for(i = 0; i < STATEREGNUM; i++) {
 	
-			current->p_supportStruct->sup_exceptState[0].s_reg[i] = oldState.s_reg[i];
-			
-		}
-	}
 	
 }

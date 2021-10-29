@@ -74,7 +74,7 @@ int main() {
 	initialState.s_sp = ramtop;
 	initialState.s_t9 = (memaddr) test;
 	/*StateCopy used rather than directly editing the registers for encapsulation purposes*/
-	stateCopy(initialState, tempPcb, 0);
+	stateCopy(&initialState, &tempPcb->p_s);
 	insertProcQ(&readyQ,tempPcb);
 	processCount++;
 	
@@ -90,7 +90,7 @@ int genExceptionHandler() {
 	state_PTR oldState = (state_t*)EXCEPTSTATEADDR;
 	
 	int excCode = ((oldState->s_cause & EXMASK) >> 2);
-	debugA(oldState->s_a0,2);
+	debugA(excCode,2);
 	/*Case 1 Cause Code == 0: Interrupts*/
 	if(excCode == IOEXCEPT)
 	{

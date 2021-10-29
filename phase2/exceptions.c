@@ -107,7 +107,7 @@ void createProcess() {
 	pcb_PTR newProc = allocPcb();
 	/*Initializes new process' state using value pointed to by a1*/
 	state_PTR newState = (state_PTR) currentProc->p_s.s_a1;
-	stateCopy(*newState, newProc, 0);
+	stateCopy(newState, &newProc->p_s);
 	/*Initializes the support structure of the new process using value pointed to by a2*/
 	newProc -> p_supportStruct = (support_t*) currentProc -> p_s.s_a2;
 	/*Inserts new process into the ready queue*/
@@ -198,22 +198,22 @@ void passeren() {
 void verhogen() {
 	
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	
-	oldState->s_a1++;
-	int sema4 = oldState->s_a1;
+	int *sema4 = oldState->s_a1;
+	*sema4++;
 	pcb_PTR p;
-	if(sema4 >= 0) {
+	if(*sema4 >= 0) {
 		p = removeBlocked(&sema4);
-		if(p != NULL) {
-		insertProcQ(&readyQ, p);
-		}
+		if(p != NULL) 
+			insertProcQ(&readyQ, p);
+		
 	}
 	oldState->s_v0 = sema4;
-	oldState->s_pc += PCINCREMENT;
-	debugC(3);
+	oldState->s_t9 = oldState->s_pc += PCINCREMENT;
+	debugC((int)currentProc);
 	
+	stateCopy(oldState, &(currentProc->p_s));
 	
-	switchState(oldState);
+	switchState(&(currentProc->p_s));
 }
 
 /*Waits for input or output from a device*/
@@ -251,7 +251,7 @@ void passUpOrDie(unsigned int passUpCase)
 		/*The current process' exception state is modified*/
 		/*NOTE TO SELF: details needed*/
 		state_PTR exceptStatePtr = (state_PTR) EXCEPTSTATEADDR;
-		stateCopy(*exceptStatePtr, currentProc, 1);
+		stateCopy(exceptStatePtr, &currentProc->p_supportStruct->sup_exceptState[0]);
 		unsigned int newPc = currentProc->p_supportStruct->sup_exceptContext[0].c_pc;
 		unsigned int newStackPtr = currentProc->p_supportStruct->sup_exceptContext[0].c_stackPtr;
 		unsigned int newStatus = currentProc->p_supportStruct->sup_exceptContext[0].c_status;
