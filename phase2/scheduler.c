@@ -11,7 +11,7 @@
 extern void setTimer();
 extern unsigned int setTIMER(unsigned int t);
 extern void switchState(state_PTR s);
-void stateCopy(state_PTR oldState, state_PTR newState);
+void stateCopy(state_PTR source, state_PTR sink);
 
 
 void debugB(int a, int b, int c) {
@@ -23,14 +23,11 @@ void debugB(int a, int b, int c) {
 void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/
 	
-	pcb_PTR currentProc = removeProcQ(&readyQ);
-	/*Adds 5 milliseconds to the timer */
-	/*Loads 5 milisecons onto the PLT*/
-	setTIMER(TIMESLICE);
-	if(currentProc != NULL)
-	{	
-		LDST(&currentProc->p_s);
+	if(!emptyProcQ(readyQ)) {
+		currentProc = removeProcQ(&readyQ);
 		
+		setTIMER(TIMESLICE);
+		switchState(&currentProc->p_s);
 	}
 	/*Initializes the state of the current process*/
 	else {
@@ -43,9 +40,9 @@ void scheduler() {
 	/*If there are any blocked processes*/
 	else if(softBlockCount > 0)
 	{
-		/*currentProc->p_s->s_status bit 0 is set to 1, then set bits 8-15 to 1*/
-		state_PTR state = (state_PTR) ((ALLOFF) | (IEPON | IMON));
-		stateCopy(state, &currentProc->p_s);
+		state_PTR state = (state_PTR)EXCEPTSTATEADDR;
+		state->s_status = ALLOFF | IECON | IEPON | IMON;
+		debugB(state->s_status,2,3);
 		/*Twiddle Thumbs until device interrupt*/
 		WAIT();
 	}
@@ -65,18 +62,17 @@ void switchState(state_PTR s) {
 
 /*Performs a deep copy of the given state into the given pcb's state field, the passup parameter is used to determine whether to copy
 into the pcb's p_s field or into its supportStruct*/
-void stateCopy(state_PTR oldState, state_PTR current) {
+void stateCopy(state_PTR source, state_PTR sink) {
 		
-		current->s_cause = oldState->s_cause;
-		debugB(2,3,4);
-		current->s_entryHI = oldState->s_entryHI;
+		sink->s_cause = source->s_cause;
+		sink->s_entryHI = source->s_entryHI;
 		
-		current->s_pc = oldState->s_pc;
-		current->s_status = oldState->s_status;
+		sink->s_pc = source->s_pc;
+		sink->s_status = source->s_status;
 		int i;
 		for(i = 0; i < STATEREGNUM; i++) {
 	
-			current->s_reg[i] = oldState->s_reg[i];
+			sink->s_reg[i] = source->s_reg[i];
 			
 		}
 	

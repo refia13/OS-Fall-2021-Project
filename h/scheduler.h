@@ -16,7 +16,7 @@
 
 extern void scheduler();
 extern void switchState(state_PTR newState);
-extern void stateCopy(state_PTR oldState, state_PTR newState);
+extern void stateCopy(state_PTR source, state_PTR sink);
 /*******************************************************************/
 
 #endif

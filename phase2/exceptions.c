@@ -171,23 +171,16 @@ void terminateProcess(pcb_PTR current) {
 /*Performs a P operation on a semaphore*/
 /*NOTE TO SELF: really need to figure out what this means*/
 void passeren() {
-	/*Current process' a1 value is decremented by one*/
-	currentProc -> p_s.s_a1--;
-	/*Checks if current process' semaphore value is below 0*/
-	if(currentProc->p_s.s_a1 < 0)
-	{
-		/*Add current process to ASL*/
-		/*NOTE TO SELF: Double check*/
-		insertBlocked(&(currentProc->p_s.s_a1), currentProc);
-		/*Call the scheduler*/
+	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	oldState->s_a1 += 1;
+	if((oldState->s_a1) < 0) {
+		insertBlocked(&oldState->s_a1, currentProc);
 		currentProc = NULL;
 		scheduler();
 	}
 	else {
-		/*Increment pc to avoid Syscall loop*/
-		/*NOTE TO WILL: thingy to change*/
-		currentProc->p_s.s_pc += PCINCREMENT;
-		/*Initializes new state based on current process' status*/
+		oldState->s_pc+= WORDLEN;
+		stateCopy(oldState, &(currentProc->p_s));
 		switchState(&(currentProc->p_s));
 	}
 	
@@ -197,49 +190,50 @@ void passeren() {
 /*NOTE TO SELF: find out what this means*/
 void verhogen() {
 	
+	
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	int *sema4 = oldState->s_a1;
-	*sema4++;
+	int sema4 = (int) (oldState->s_a1);
+	oldState->s_a1 = sema4 + 1;
+	debugC(oldState->s_a1);
 	pcb_PTR p;
-	if(*sema4 >= 0) {
-		p = removeBlocked(&sema4);
+	if(oldState->s_a1 >= 0) {
+		p = removeBlocked(&(oldState->s_a1));
+		debugC((int)p);
 		if(p != NULL) 
 			insertProcQ(&readyQ, p);
 		
 	}
-	oldState->s_v0 = sema4;
-	oldState->s_t9 = oldState->s_pc += PCINCREMENT;
-	debugC((int)currentProc);
+	oldState->s_v0 = oldState->s_a1;
+	oldState->s_pc+= WORDLEN;
 	
 	stateCopy(oldState, &(currentProc->p_s));
-	
 	switchState(&(currentProc->p_s));
 }
 
 /*Waits for input or output from a device*/
 void waitForDevice() {
-	/*Sets line number to the current process' a1 value*/
-	int lineNo = currentProc->p_s.s_a1;
-	/*Sets device number to the current process' a2 value*/
-	int devNo = currentProc->p_s.s_a2;
-	/*Sets device index as the line number multiplied by device number incremented by one*/
-	int devIndex = (lineNo-3)*8 + devNo;
-	/*Set current process' a1 value to the device semaphore*/
-	currentProc->p_s.s_a1 = deviceSema4s[devIndex];
-	/*Switch the state of the current process*/
-	switchState(&currentProc->p_s);
-	/*Perform a P operation on current process*/
-	passeren();
+	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	int lineNo = oldState->s_a1;
+	int devNo = oldState->s_a2;
+	int waitForTermRead = oldState->s_a3;
+	int devSemIndex = (lineNo-3)*8 + devNo;
+	if(waitForTermRead) {
+		devSemIndex += 8;
+	}
+	int devSem = deviceSema4s[devSemIndex];
+	devSem--;
+	if(devSem < 0) {
+		insertBlocked(&devSem, currentProc);
+		currentProc = NULL;
+		softBlockCount++;
+		scheduler();
+	}
 }
 
 /*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
 void waitForClock() {
-	/*Set current process' a1 register to the pseudo-clock semaphore*/
-	currentProc->p_s.s_a1 = clockSem;
-	/*Block the current process*/
-	switchState(&currentProc->p_s);
-	/*Perform a P operation on the current process*/
-	passeren();
+	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	
 }
 
 

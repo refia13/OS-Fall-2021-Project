@@ -111,7 +111,11 @@ void	p5sys(),p8root(),child1(),child2(),p8leaf();
 extern void p5gen ();
 extern void p5mm ();
 
+void debugE(int a) {
 
+	int i = 0;
+	i++;
+}
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
 
@@ -122,6 +126,7 @@ void print(char *msg) {
 	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		debugE((int)s);
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
 		if ((status & TERMSTATMASK) != RECVD)
 			PANIC();
@@ -142,18 +147,15 @@ void uTLB_RefillHandler () {
 	LDST ((state_PTR) 0x0FFFF000);
 }
 
-void debugE(int a) {
 
-	int i = 0;
-	i++;
-}
 /*********************************************************************/
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
-void test() {	
-	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
+void test() {
 	
+	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);
+						/* V(testsem)   */
 	print("p1 v(testsem)\n");
 
 	/* set up states of the other processes */
@@ -234,6 +236,7 @@ void test() {
 	gchild4state.s_pc = gchild4state.s_t9 = (memaddr)p8leaf;
 	gchild4state.s_status = gchild4state.s_status | IEPBITON | CAUSEINTMASK | TEBITON;
 	
+	debugE(2);
 	/* create process p2 */
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
 
