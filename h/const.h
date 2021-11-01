@@ -57,6 +57,7 @@
 #define UNINSTALLED		0
 #define READY			    1
 #define BUSY			    3
+#define CHARRECV 5
 
 /* device common COMMAND codes */
 #define RESET			    0
@@ -108,8 +109,17 @@
 #define PRINTERINTERRUPT 	0x00004000
 #define TERMINTERRUPT 	0x00008000
 
+/*LineNo Constants*/
+#define INTERVALTIMER 1
+#define PLTIMER 2
+#define DISK 3
+#define FLASH 4
+#define NETWORK 5
+#define PRINTER 6
+#define TERMINAL 7
+
 /*Device Interrupt Masks*/
-#define DEV0 	0x00000000
+#define DEV0 	0x00000001
 #define DEV1 	0x00000002
 #define DEV2 	0x00000004
 #define DEV3 	0x00000008

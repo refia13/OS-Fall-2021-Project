@@ -172,10 +172,11 @@ void terminateProcess(pcb_PTR current) {
 /*NOTE TO SELF: really need to figure out what this means*/
 void passeren() {
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	oldState->s_a1 += 1;
-	if((oldState->s_a1) < 0) {
-		insertBlocked(&oldState->s_a1, currentProc);
-		currentProc = NULL;
+	int *sem = oldState->s_a1;
+	(*sem)--;
+	oldState->s_a1 = *sem;
+	if((*sem) < 0) {
+		insertBlocked(&(oldState->s_a1), currentProc);
 		scheduler();
 	}
 	else {
@@ -192,13 +193,12 @@ void verhogen() {
 	
 	
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	int sema4 = (int) (oldState->s_a1);
-	oldState->s_a1 = sema4 + 1;
-	debugC(oldState->s_a1);
+	int *sem = oldState->s_a1;
+	(*sem)++;
+	oldState->s_a1 = *sem;
 	pcb_PTR p;
 	if(oldState->s_a1 >= 0) {
 		p = removeBlocked(&(oldState->s_a1));
-		debugC((int)p);
 		if(p != NULL) 
 			insertProcQ(&readyQ, p);
 		
@@ -217,14 +217,13 @@ void waitForDevice() {
 	int devNo = oldState->s_a2;
 	int waitForTermRead = oldState->s_a3;
 	int devSemIndex = (lineNo-3)*8 + devNo;
-	if(waitForTermRead) {
+	if(waitForTermRead == TRUE) {
 		devSemIndex += 8;
 	}
-	int devSem = deviceSema4s[devSemIndex];
-	devSem--;
-	if(devSem < 0) {
-		insertBlocked(&devSem, currentProc);
-		currentProc = NULL;
+	deviceSema4s[devSemIndex]--;
+	if(deviceSema4s[devSemIndex] < 0) {
+		debugC((int)(&deviceSema4s[devSemIndex]));
+		insertBlocked(&(deviceSema4s[devSemIndex]), currentProc);
 		softBlockCount++;
 		scheduler();
 	}
@@ -233,7 +232,8 @@ void waitForDevice() {
 /*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
 void waitForClock() {
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	
+	int i = oldState->s_a1; /*Dummy line to remove warning in compiler*/
+	i++;
 }
 
 

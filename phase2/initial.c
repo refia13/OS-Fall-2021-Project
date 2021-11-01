@@ -90,7 +90,7 @@ int genExceptionHandler() {
 	state_PTR oldState = (state_t*)EXCEPTSTATEADDR;
 	
 	int excCode = ((oldState->s_cause & EXMASK) >> 2);
-	debugA(currentProc,2);
+	debugA(excCode,2);
 	/*Case 1 Cause Code == 0: Interrupts*/
 	if(excCode == IOEXCEPT)
 	{

@@ -42,7 +42,7 @@ void scheduler() {
 	{
 		state_PTR state = (state_PTR)EXCEPTSTATEADDR;
 		state->s_status = ALLOFF | IECON | IEPON | IMON;
-		debugB(state->s_status,2,3);
+
 		/*Twiddle Thumbs until device interrupt*/
 		WAIT();
 	}

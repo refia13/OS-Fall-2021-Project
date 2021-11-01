@@ -14,6 +14,11 @@ void itInterrupt();
 void pltInterrupt();
 void nonTimerInterrupt(devregarea_t *devRegA, int lineNo);
 
+void debugD(int a) {
+	int i = 0;
+	i++;
+}
+
 /*General Interrupt Handler, determines the lineNo of the pending interrupt and moves into the appropriate interrupt handling function*/
 void interruptHandler(state_PTR interruptState) {
 	
@@ -29,19 +34,19 @@ void interruptHandler(state_PTR interruptState) {
 	}
 	if(cause & DISKINTERRUPT)
 	{
-		nonTimerInterrupt(devrega, DISKINTERRUPT);
+		nonTimerInterrupt(devrega, DISK);
 	}
 	if(cause & FLASHINTERRUPT)
 	{
-		nonTimerInterrupt(devrega, FLASHINTERRUPT);
+		nonTimerInterrupt(devrega, FLASH);
 	}
 	if(cause & PRINTERINTERRUPT)
 	{
-		nonTimerInterrupt(devrega, PRINTERINTERRUPT);
+		nonTimerInterrupt(devrega, PRINTER);
 	}
 	if(cause & TERMINTERRUPT)
 	{
-		nonTimerInterrupt(devrega, TERMINTERRUPT);
+		nonTimerInterrupt(devrega, TERMINAL);
 	}
 	
 }
@@ -50,73 +55,82 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 
 	/*Determine which deviceNo is interrupting*/
 	int devNo;
-	unsigned int devNoMap = devRegA-> interrupt_dev[lineNo];
-	if(devNoMap & DEV0)
-		devNo = 0;
-	else if(devNoMap & DEV1)
-		devNo = 1;
-	else if(devNoMap & DEV2)
-		devNo = 2;
-	else if(devNoMap & DEV3)
-		devNo = 3;
-	else if(devNoMap & DEV4)
-		devNo = 4;
-	else if(devNoMap & DEV5)
-		devNo = 5;
-	else if(devNoMap & DEV6)
-		devNo = 6;
-	else
-		devNo = 7;
+	
+	int devNoMap = devRegA->interrupt_dev[lineNo-3];
+	
+	if(devNoMap & DEV0) {
+		devNo = 0; }
+	else if(devNoMap & DEV1) {
+		devNo = 1; }
+	else if(devNoMap & DEV2) {
+		devNo = 2; }
+	else if(devNoMap & DEV3) {
+		devNo = 3; }
+	else if(devNoMap & DEV4) {
+		devNo = 4; }
+	else if(devNoMap & DEV5) {
+		devNo = 5; }
+	else if(devNoMap & DEV6) {
+		devNo = 6; }
+	else if(devNoMap & DEV7) {
+		devNo = 7; }
+
 	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
 	/*Calculate the address for the device register*/
-	unsigned int devAddrBase = 0x10000054 + ((lineNo - 3) * 0x00000080) + (devNo * 0x00000010);
 	int devIndex = ((lineNo - 3) * 8) + (devNo);
-	
-	device_t *devReg = (device_t*) devAddrBase;
 	int statusCode;
+	
 	/*special case device is a terminal*/
 	if(lineNo == 7)
 	{
-		/*Check if Transmit is interrupting*/
-		if(devReg->t_transm_status == READY)
-		{
-			statusCode = devReg-> t_transm_status;
-			devReg->t_transm_command = ACK;
-			devIndex = devIndex + 8; /*devIndex is alterred so that it is for a transm devSem*/
-		}
-		else {
+		if((devRegA->devreg[devIndex].t_transm_status & 0xFF) == CHARRECV) {
 			
-			statusCode = devReg-> t_recv_status;
-			devReg->t_recv_command = ACK;
+			statusCode = devRegA->devreg[devIndex].t_transm_status;
+			debugD((devRegA->devreg[devIndex].t_transm_command));
+			devRegA->devreg[devIndex].t_transm_command |=  0x1;
+			debugD((devRegA->devreg[devIndex].t_transm_command));
+			
+			
+		}
+		else{
+			statusCode = devRegA->devreg[devIndex].t_recv_status;
+
+			devRegA->devreg[devIndex].t_recv_command = ACK;
+			devIndex += 8;
+			
 		}
 		
 	}
-	/*Not a terminal*/
 	else {
-	/*save off the status code from the device register*/
-	statusCode = devReg->d_status;
-	/*ACK the Interrupt*/
-	devReg->d_command = ACK;
+	/*Not a terminal*/
+		statusCode = devRegA->devreg[devIndex].d_status;
+		devRegA->devreg[devIndex].d_command = ACK;
 	}
-	int devSem = deviceSema4s[devIndex];
-	/*Perform a V operation on the device semaphore*/
 	pcb_PTR p;
-	devSem++;
-	if(devSem >= 0)
+	deviceSema4s[devIndex]++;
+	if(deviceSema4s[devIndex] >= 0)
 	{
-		p = removeBlocked(&devSem);
+		p = removeBlocked(&(deviceSema4s[devIndex]));
 		if(p == NULL)
 		{
-				exceptionState->s_pc+= PCINCREMENT;
-				switchState(exceptionState);
+				
+				if(currentProc != NULL) {
+					switchState(&(currentProc->p_s));
+				}
+				else {
+					
+					scheduler();
+				}
 		}
 	}
 	/*Place the stored off status code in v0*/
 	p->p_s.s_v0 = statusCode;
 	/*Insert the newly unblocked pcb onto the readyQ*/
 	insertProcQ(&readyQ, p);
+	softBlockCount--;
 	/*Return control to the current Process. Perform a LDST on the saved exception state*/
-	exceptionState->s_pc += PCINCREMENT;
+	exceptionState->s_pc += WORDLEN;
+	debugD(99);
 	switchState(exceptionState);
 }
 
