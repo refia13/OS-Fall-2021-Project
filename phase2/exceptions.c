@@ -223,7 +223,11 @@ void waitForDevice() {
 	deviceSema4s[devSemIndex]--;
 	if(deviceSema4s[devSemIndex] < 0) {
 		debugC((int)(&deviceSema4s[devSemIndex]));
+		oldState->s_pc += WORDLEN;
+		stateCopy(oldState, &(currentProc->p_s));
 		insertBlocked(&(deviceSema4s[devSemIndex]), currentProc);
+		debugC((int)currentProc);
+		currentProc = NULL;
 		softBlockCount++;
 		scheduler();
 	}

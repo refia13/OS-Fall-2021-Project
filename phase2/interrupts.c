@@ -83,21 +83,15 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	/*special case device is a terminal*/
 	if(lineNo == 7)
 	{
-		if((devRegA->devreg[devIndex].t_transm_status & 0xFF) == CHARRECV) {
-			
-			statusCode = devRegA->devreg[devIndex].t_transm_status;
-			debugD((devRegA->devreg[devIndex].t_transm_command));
-			devRegA->devreg[devIndex].t_transm_command |=  0x1;
-			debugD((devRegA->devreg[devIndex].t_transm_command));
-			
-			
+		statusCode = devRegA->devreg[devIndex].t_transm_status;
+		if(statusCode != READY) {
+			debugD(9);
+			devRegA->devreg[devIndex].t_transm_command = ACK;
 		}
 		else{
-			statusCode = devRegA->devreg[devIndex].t_recv_status;
-
+			statusCode = devRegA->devreg[devIndex].t_recv_status & 0xFF;
 			devRegA->devreg[devIndex].t_recv_command = ACK;
-			devIndex += 8;
-			
+			devIndex+= 8;
 		}
 		
 	}
@@ -108,34 +102,28 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	}
 	pcb_PTR p;
 	deviceSema4s[devIndex]++;
-	if(deviceSema4s[devIndex] >= 0)
-	{
+	debugD(1);
+	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
-		if(p == NULL)
-		{
-				
-				if(currentProc != NULL) {
-					switchState(&(currentProc->p_s));
-				}
-				else {
-					
-					scheduler();
-				}
+		if(p != NULL) {
+			
+			p->p_s.s_v0 = statusCode;
+			softBlockCount--;
+			insertProcQ(&readyQ, p);
 		}
 	}
-	/*Place the stored off status code in v0*/
-	p->p_s.s_v0 = statusCode;
-	/*Insert the newly unblocked pcb onto the readyQ*/
-	insertProcQ(&readyQ, p);
-	softBlockCount--;
-	/*Return control to the current Process. Perform a LDST on the saved exception state*/
+	debugD((int)currentProc);
 	exceptionState->s_pc += WORDLEN;
-	debugD(99);
+	if(currentProc == NULL) {
+		debugD(100);
+		scheduler();
+	}
+	
 	switchState(exceptionState);
 }
 
 
-
+ 
 
 void pltInterrupt() {
 

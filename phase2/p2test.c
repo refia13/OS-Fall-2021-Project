@@ -128,7 +128,7 @@ void print(char *msg) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
 		
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);
-		debugE(status);	
+			
 		if ((status & TERMSTATMASK) != RECVD)
 			PANIC();
 		s++;	
@@ -159,6 +159,7 @@ void test() {
 						/* V(testsem)   */
 	print("p1 v(testsem)\n");
 
+	debugE(99);
 	/* set up states of the other processes */
 
 	/* set up p2's state */
