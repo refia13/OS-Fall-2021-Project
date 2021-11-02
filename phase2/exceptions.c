@@ -69,13 +69,11 @@ void syscallHandler(int syscallCode)
 			
 		/*SYS6 Get CPU Time*/
 		case GETCPUT: {
-			/*Accumulated processor time is plced in the current process' v0 register*/
-			currentProc->p_s.s_v0 = currentProc->p_time;
-			/*Increment pc to avoid Syscall loop*/
-			/*NOTE TO WILL: thingy to change*/
-			currentProc->p_s.s_pc += PCINCREMENT;
-			/*Creates a new state based on the state of the current process*/
-			switchState(&currentProc->p_s); }
+			oldState->s_v0 = (currentProc->p_time);
+			oldState->s_pc += WORDLEN;
+			stateCopy(oldState, &(currentProc->p_s));
+			switchState(&(currentProc->p_s));
+			}
 			
 		/*SYS7 Wait for Clock*/
 		case WAITFORCLOCK: {
@@ -103,25 +101,21 @@ void syscallHandler(int syscallCode)
 /*Creates a new process for use*/
 void createProcess() {
 
-	/*Creates new process by allocating PCB */
+	state_PTR exceptionState = (state_PTR)EXCEPTSTATEADDR;
 	pcb_PTR newProc = allocPcb();
-	/*Initializes new process' state using value pointed to by a1*/
-	state_PTR newState = (state_PTR) currentProc->p_s.s_a1;
-	stateCopy(newState, &newProc->p_s);
-	/*Initializes the support structure of the new process using value pointed to by a2*/
-	newProc -> p_supportStruct = (support_t*) currentProc -> p_s.s_a2;
-	/*Inserts new process into the ready queue*/
-	insertProcQ(&readyQ,newProc);
-	/*Assigns new process as the child of the current process*/
-	insertChild(currentProc,newProc);
-	/*Process count incremented*/
+	if(newProc == NULL) {
+		exceptionState->s_v0 = ERRORCODE;
+		exceptionState->s_pc += WORDLEN;
+		switchState(exceptionState);
+	}
+	state_PTR newState = (exceptionState->s_a1);
+	stateCopy(newState, &(newProc->p_s));
+	newProc->p_supportStruct = (support_t*)(exceptionState->s_a2);
+	insertProcQ(&readyQ, newProc);
+	insertChild(newProc,currentProc);
+	exceptionState->s_pc += WORDLEN;
 	processCount++;
-	/*CPU time initialized to zero*/
-	newProc -> p_time = 0;
-	/*Initializes the new process in the "ready" state, rather than a blocked state*/
-	newProc -> p_semAdd = NULL;
-	/*Increment pc to avoid Syscall loop*/
-	currentProc->p_s.s_pc += PCINCREMENT;
+	switchState(exceptionState);
 }
 
 /*Terminate the current process, and all of its children*/
@@ -172,15 +166,18 @@ void terminateProcess(pcb_PTR current) {
 /*NOTE TO SELF: really need to figure out what this means*/
 void passeren() {
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	
 	int *sem = oldState->s_a1;
 	(*sem)--;
-	oldState->s_a1 = *sem;
+	
+	oldState->s_pc+= WORDLEN;
+	stateCopy(oldState, &(currentProc->p_s));
 	if((*sem) < 0) {
 		insertBlocked(&(oldState->s_a1), currentProc);
 		scheduler();
 	}
 	else {
-		oldState->s_pc+= WORDLEN;
+		oldState->s_pc += WORDLEN;
 		stateCopy(oldState, &(currentProc->p_s));
 		switchState(&(currentProc->p_s));
 	}
@@ -193,8 +190,10 @@ void verhogen() {
 	
 	
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	debugC((int)oldState->s_a1);
 	int *sem = oldState->s_a1;
 	(*sem)++;
+	debugC((int)sem);
 	oldState->s_a1 = *sem;
 	pcb_PTR p;
 	if(oldState->s_a1 >= 0) {
@@ -222,11 +221,11 @@ void waitForDevice() {
 	}
 	deviceSema4s[devSemIndex]--;
 	if(deviceSema4s[devSemIndex] < 0) {
-		debugC((int)(&deviceSema4s[devSemIndex]));
+		
 		oldState->s_pc += WORDLEN;
 		stateCopy(oldState, &(currentProc->p_s));
 		insertBlocked(&(deviceSema4s[devSemIndex]), currentProc);
-		debugC((int)currentProc);
+		
 		currentProc = NULL;
 		softBlockCount++;
 		scheduler();
@@ -235,9 +234,19 @@ void waitForDevice() {
 
 /*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
 void waitForClock() {
+	int stopTod;
+	STCK(stopTod);
+	currentProc->p_time += (stopTod - startTod);
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	int i = oldState->s_a1; /*Dummy line to remove warning in compiler*/
-	i++;
+	clockSem--;
+	if(clockSem < 0) {
+		oldState->s_pc += WORDLEN;
+		stateCopy(oldState, &(currentProc->p_s));
+		insertBlocked(&clockSem, currentProc);
+		currentProc = NULL;
+	}
+	STCK(startTod);
+	scheduler();
 }
 
 

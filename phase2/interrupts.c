@@ -85,7 +85,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	{
 		statusCode = devRegA->devreg[devIndex].t_transm_status;
 		if(statusCode != READY) {
-			debugD(9);
+			
 			devRegA->devreg[devIndex].t_transm_command = ACK;
 		}
 		else{
@@ -102,7 +102,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	}
 	pcb_PTR p;
 	deviceSema4s[devIndex]++;
-	debugD(1);
+
 	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
 		if(p != NULL) {
@@ -112,10 +112,9 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 			insertProcQ(&readyQ, p);
 		}
 	}
-	debugD((int)currentProc);
 	exceptionState->s_pc += WORDLEN;
 	if(currentProc == NULL) {
-		debugD(100);
+		
 		scheduler();
 	}
 	
@@ -127,20 +126,19 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 
 void pltInterrupt() {
 
-	int stopTod;
-	/*ACK the Interrupt*/
-	setTIMER(TIMESLICE);
-	STCK(stopTod);
-	/*copy the processor state*/
-	state_PTR oldState;
-	oldState = (state_PTR)EXCEPTSTATEADDR;
-	/*Copy oldState into currentProc->p_s*/
-	stateCopy(oldState, &currentProc->p_s); 
-	currentProc->p_time = (stopTod - startTod);
-	/*place currentProc on the readyQ*/
+	/*ACK the Interrupt reloading time on the plt*/
+	int stopTOD;
+	STCK(stopTOD);
+	cpu_t acTime = stopTOD - startTod;
+	currentProc->p_time += acTime;
+	state_PTR exceptionState = (state_PTR)EXCEPTSTATEADDR;
+	exceptionState->s_pc += WORDLEN;
+	stateCopy(exceptionState, &(currentProc->p_s));
 	insertProcQ(&readyQ, currentProc);
+	debugD((int)readyQ);
+	setTIMER(TIMESLICE);
+	STCK(startTod);
 	currentProc = NULL;
-	/*call the scheduler*/
 	scheduler();
 }
 
@@ -156,9 +154,11 @@ void itInterrupt()
 	{
 		insertProcQ(&readyQ, p);
 		p = removeBlocked(&clockSem);
+		softBlockCount--;
 	}
 	/*Reset ClockSem to 0*/
 	clockSem = 0;
+	
 	/*Return control to the current process. Perform a LDST on the saved exception state*/
 	switchState(exceptionState);
 }

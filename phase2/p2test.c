@@ -129,8 +129,9 @@ void print(char *msg) {
 		
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);
 			
-		if ((status & TERMSTATMASK) != RECVD)
-			PANIC();
+		if ((status & TERMSTATMASK) != RECVD) {
+			debugE(8008);
+			PANIC(); }
 		s++;	
 	}
 	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);				/* V(term_mut) */
@@ -159,7 +160,7 @@ void test() {
 						/* V(testsem)   */
 	print("p1 v(testsem)\n");
 
-	debugE(99);
+	
 	/* set up states of the other processes */
 
 	/* set up p2's state */
@@ -238,22 +239,21 @@ void test() {
 	gchild4state.s_pc = gchild4state.s_t9 = (memaddr)p8leaf;
 	gchild4state.s_status = gchild4state.s_status | IEPBITON | CAUSEINTMASK | TEBITON;
 	
-	debugE(2);
+
 	/* create process p2 */
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
 
 	print("p2 was started\n");
-
-	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);								/* V(startp2)   */
-
-	SYSCALL(PASSERN, (int)&endp2, 0, 0);								/* P(endp2)     */
-
+	debugE((int)&startp2);
+	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);	
+								/* V(startp2)   */
+	SYSCALL(PASSERN, (int)&endp2, 0, 0);
+								/* P(endp2)     */
 	/* make sure we really blocked */
 	if (p1p2synch == 0)
 		print("error: p1/p2 synchronization bad\n");
 
 	SYSCALL(CREATETHREAD, (int)&p3state, (int) NULL, 0);				/* start p3     */
-
 	print("p3 is started\n");
 
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
@@ -305,9 +305,10 @@ void p2() {
 	int		i;				/* just to waste time  */
 	cpu_t	now1,now2;		/* times of day        */
 	cpu_t	cpu_t1,cpu_t2;	/* cpu time used       */
-
+	
+	
 	SYSCALL(PASSERN, (int)&startp2, 0, 0);				/* P(startp2)   */
-
+	
 	print("p2 starts\n");
 
 	/* initialize all semaphores in the s[] array */
@@ -316,7 +317,8 @@ void p2() {
 
 	/* V, then P, all of the semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)  {
-		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);			/* V(S[I]) */
+		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);
+					/* V(S[I]) */
 		SYSCALL(PASSERN, (int)&s[i], 0, 0);			/* P(S[I]) */
 		if (s[i] != 0)
 			print("error: p2 bad v/p pairs\n");
@@ -332,10 +334,8 @@ void p2() {
 	/* delay for several milliseconds */
 	for (i=1; i < LOOPNUM; i++)
 		;
-
 	cpu_t2 = SYSCALL(GETCPUTIME, 0, 0, 0);			/* CPU time used */
 	STCK(now2);				/* time of day  */
-
 	if (((now2 - now1) >= (cpu_t2 - cpu_t1)) &&
 			((cpu_t2 - cpu_t1) >= (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR)))))
 		print("p2 is OK\n");
@@ -348,7 +348,7 @@ void p2() {
 	}
 
 	p1p2synch = 1;				/* p1 will check this */
-
+	
 	SYSCALL(VERHOGEN, (int)&endp2, 0, 0);				/* V(endp2)     */
 
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p2 */

@@ -22,6 +22,7 @@ void debugB(int a, int b, int c) {
 /*Program for the scheduler, assigns time to processes and begins their execution*/
 void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/
+	
 	if(!emptyProcQ(readyQ)) {
 		currentProc = removeProcQ(&readyQ);
 		
@@ -39,17 +40,18 @@ void scheduler() {
 	/*If there are any blocked processes*/
 	else if(softBlockCount > 0)
 	{
-		debugB(1,2,3);
 		state_PTR state = (state_PTR)EXCEPTSTATEADDR;
 		/*state->s_status = ALLOFF | IECON | IMON;*/
 		setSTATUS(ALLOFF | IECON | IMON);
 		/*Twiddle Thumbs until device interrupt*/
+		debugB(1,2,3);
 		WAIT();
 	}
 	/*Deadlocked - Process count > 0 and blocked count = 0*/
 	else
 	{
 		/*Panic to deal with deadlock*/
+		debugB(&readyQ,3,3);
 		PANIC();
 	}
 	}
