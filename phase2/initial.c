@@ -89,20 +89,20 @@ int genExceptionHandler() {
 	/*Check Cause Exception Code*/
 	state_PTR oldState = (state_t*)EXCEPTSTATEADDR;
 	
-	int excCode = ((oldState->s_cause & EXMASK) >> 2);
-	debugA(excCode,2);
+	int excCode = (((oldState->s_cause) & EXMASK) >> 2);
+	debugA(excCode,100);
 	/*Case 1 Cause Code == 0: Interrupts*/
-	if(excCode == IOEXCEPT)
+	if(excCode == 0)
 	{
 		interruptHandler(oldState);
 	}
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
-	if(excCode <= TLBREFILLEXCEPT)
+	else if(excCode <= TLBREFILLEXCEPT)
 	{
-		tlbExceptionHandler();
+		uTLB_RefillHandler();
 	}
 	/*Case 3 Code == 8: SYSCALL*/
-	if(excCode == SYSCALLEXCEPT)
+	else if(excCode == SYSCALLEXCEPT)
 	{
 		syscallHandler(oldState->s_a0);
 	}
@@ -110,7 +110,7 @@ int genExceptionHandler() {
 	else {
 		passUpOrDie(GENERALEXCEPT);
 	}
-	
+	debugA(excCode,9);
 	programTrapHandler();
 	return 0;
 }

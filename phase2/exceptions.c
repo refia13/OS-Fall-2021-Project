@@ -82,12 +82,11 @@ void syscallHandler(int syscallCode)
 			
 		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
-			/*Stores pointer for current process' support structure in register v0*/
-			currentProc->p_s.s_v0 = (int) currentProc->p_supportStruct;
-			/*Increment pc to avoid Syscall loop*/
-			currentProc->p_s.s_pc += PCINCREMENT;
-			/*Creates new state for current process*/
-			switchState(&currentProc->p_s); }
+			oldState->s_v0 = (currentProc->p_supportStruct);
+			oldState->s_pc += WORDLEN;
+			stateCopy(oldState, &(currentProc->p_s));
+			switchState(&(currentProc->p_s));
+			}
 			
 		/*Sycall code is greater than 8*/
 		default: {			
@@ -128,7 +127,7 @@ void terminateProcess(pcb_PTR current) {
 	}
 	
 	/*Checks if the inputted parameter is the current process*/
-	if(current == currentProc)
+	if(&current == &currentProc)
 	{	
 		/*Disconnect current from its parent*/
 		outChild(current);
@@ -159,7 +158,8 @@ void terminateProcess(pcb_PTR current) {
 	}
 	/*Add current to the free PCB list*/
 	/*NOTE TO SELF: double check*/
-	freePcb(current); 
+	freePcb(current);
+	processCount--;
 }
 
 /*Performs a P operation on a semaphore*/
@@ -190,10 +190,8 @@ void verhogen() {
 	
 	
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
-	debugC((int)oldState->s_a1);
 	int *sem = oldState->s_a1;
 	(*sem)++;
-	debugC((int)sem);
 	oldState->s_a1 = *sem;
 	pcb_PTR p;
 	if(oldState->s_a1 >= 0) {
@@ -239,6 +237,7 @@ void waitForClock() {
 	currentProc->p_time += (stopTod - startTod);
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	clockSem--;
+	softBlockCount++;
 	if(clockSem < 0) {
 		oldState->s_pc += WORDLEN;
 		stateCopy(oldState, &(currentProc->p_s));
@@ -271,10 +270,10 @@ void passUpOrDie(unsigned int passUpCase)
 }
 /*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value GENERALEXCEPT*/
 void programTrapHandler() {
-
+	debugC(4000);
 	passUpOrDie(GENERALEXCEPT);
 }
-/*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value PGFAULTEXCEPT*/
+/*Nucleus level tlbException Handler, performs a passUpOrDie operation with the value PGFAULTEXCEPT*/
 void tlbExceptionHandler() {
 	passUpOrDie(PGFAULTEXCEPT);
 }

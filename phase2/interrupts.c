@@ -24,14 +24,15 @@ void interruptHandler(state_PTR interruptState) {
 	
 	int cause = interruptState->s_cause;
 	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
-	if(cause & ITINTERRUPT)
-	{
-		itInterrupt();
-	}
 	if(cause & PLTINTERRUPT)
 	{
 		pltInterrupt();
 	}
+	if(cause & ITINTERRUPT)
+	{
+		itInterrupt();
+	}
+	
 	if(cause & DISKINTERRUPT)
 	{
 		nonTimerInterrupt(devrega, DISK);
@@ -126,39 +127,34 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 
 void pltInterrupt() {
 
-	/*ACK the Interrupt reloading time on the plt*/
-	int stopTOD;
-	STCK(stopTOD);
-	cpu_t acTime = stopTOD - startTod;
-	currentProc->p_time += acTime;
-	state_PTR exceptionState = (state_PTR)EXCEPTSTATEADDR;
-	exceptionState->s_pc += WORDLEN;
-	stateCopy(exceptionState, &(currentProc->p_s));
-	insertProcQ(&readyQ, currentProc);
-	debugD((int)readyQ);
+	int stopTod;
+	STCK(stopTod);
 	setTIMER(TIMESLICE);
+	if(currentProc != NULL) {
+		stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
+		currentProc->p_time += (stopTod - startTod);
+		insertProcQ(&readyQ, currentProc);
+		currentProc = NULL;
+	}
 	STCK(startTod);
-	currentProc = NULL;
 	scheduler();
 }
 
 void itInterrupt()
 {
-	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
-	/*ACK the Interrupt by loading 100 milliseconds onto the interval timer*/
 	LDIT(ITSECOND);
-	/*Unblock ALL Pcbs blocked on clockSem*/
-	pcb_PTR p;
-	p = removeBlocked(&clockSem);
-	while(p != NULL)
-	{
+	pcb_PTR p = removeBlocked(&clockSem);
+	while(p != NULL) {
 		insertProcQ(&readyQ, p);
-		p = removeBlocked(&clockSem);
 		softBlockCount--;
+		p = removeBlocked(&clockSem);
 	}
-	/*Reset ClockSem to 0*/
 	clockSem = 0;
-	
-	/*Return control to the current process. Perform a LDST on the saved exception state*/
-	switchState(exceptionState);
+	if(currentProc != NULL) {
+		scheduler();
+	}
+	switchState((state_PTR)EXCEPTSTATEADDR);
 }
+
+
+

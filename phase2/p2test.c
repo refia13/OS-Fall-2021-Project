@@ -130,7 +130,6 @@ void print(char *msg) {
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);
 			
 		if ((status & TERMSTATMASK) != RECVD) {
-			debugE(8008);
 			PANIC(); }
 		s++;	
 	}
@@ -244,7 +243,6 @@ void test() {
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
 
 	print("p2 was started\n");
-	debugE((int)&startp2);
 	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);	
 								/* V(startp2)   */
 	SYSCALL(PASSERN, (int)&endp2, 0, 0);
@@ -329,12 +327,14 @@ void p2() {
 	/* test of SYS6 */
 
 	STCK(now1);				/* time of day   */
+	debugE(100);
 	cpu_t1 = SYSCALL(GETCPUTIME, 0, 0, 0);			/* CPU time used */
 
 	/* delay for several milliseconds */
 	for (i=1; i < LOOPNUM; i++)
 		;
 	cpu_t2 = SYSCALL(GETCPUTIME, 0, 0, 0);			/* CPU time used */
+	
 	STCK(now2);				/* time of day  */
 	if (((now2 - now1) >= (cpu_t2 - cpu_t1)) &&
 			((cpu_t2 - cpu_t1) >= (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR)))))
@@ -406,6 +406,7 @@ void p3() {
 void p4() {
 	switch (p4inc) {
 		case 1:
+			debugE(10000);
 			print("first incarnation of p4 starts\n");
 			p4inc++;
 			break;
