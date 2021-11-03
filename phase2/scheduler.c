@@ -27,6 +27,7 @@ void scheduler() {
 		currentProc = removeProcQ(&readyQ);
 		
 		setTIMER(TIMESLICE);
+		STCK(startTod);
 		switchState(&currentProc->p_s);
 	}
 	/*Initializes the state of the current process*/

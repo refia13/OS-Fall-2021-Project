@@ -150,10 +150,11 @@ void itInterrupt()
 		p = removeBlocked(&clockSem);
 	}
 	clockSem = 0;
-	if(currentProc != NULL) {
+	if(currentProc == NULL) {
 		scheduler();
 	}
-	switchState((state_PTR)EXCEPTSTATEADDR);
+	stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
+	switchState(&(currentProc->p_s));
 }
 
 

@@ -90,11 +90,11 @@ int genExceptionHandler() {
 	state_PTR oldState = (state_t*)EXCEPTSTATEADDR;
 	
 	int excCode = (((oldState->s_cause) & EXMASK) >> 2);
-	debugA(excCode,100);
 	/*Case 1 Cause Code == 0: Interrupts*/
 	if(excCode == 0)
 	{
 		interruptHandler(oldState);
+		debugA(1,2);
 	}
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
 	else if(excCode <= TLBREFILLEXCEPT)
@@ -105,12 +105,12 @@ int genExceptionHandler() {
 	else if(excCode == SYSCALLEXCEPT)
 	{
 		syscallHandler(oldState->s_a0);
+		debugA(3,2);
 	}
 	/*Other: Pass Up or Die*/
 	else {
 		passUpOrDie(GENERALEXCEPT);
 	}
-	debugA(excCode,9);
 	programTrapHandler();
 	return 0;
 }

@@ -344,6 +344,7 @@ void p2() {
 			print ("error: more cpu time than real time\n");
 		if ((cpu_t2 - cpu_t1) < (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR))))
 			print ("error: not enough cpu time went by\n");
+		
 		print("p2 blew it!\n");
 	}
 
