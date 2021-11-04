@@ -100,27 +100,33 @@ void syscallHandler(int syscallCode)
 /*Creates a new process for use*/
 void createProcess() {
 
-	state_PTR exceptionState = (state_PTR)EXCEPTSTATEADDR;
+	state_PTR exceptState = (state_PTR)EXCEPTSTATEADDR;
 	pcb_PTR newProc = allocPcb();
-	if(newProc == NULL) {
-		exceptionState->s_v0 = ERRORCODE;
-		exceptionState->s_pc += WORDLEN;
-		switchState(exceptionState);
+	int result = ERRORCODE;
+	if(newProc != NULL) {
+		processCount++;
+		state_PTR newState = (state_PTR)(exceptState->s_a1);
+		stateCopy(newState, &(newProc->p_s));
+		newProc->p_supportStruct = (support_t*)exceptState->s_a2;
+		insertChild(currentProc, newProc);
+		newProc->p_time = 0;
+		newProc->p_semAdd = NULL;
+		insertProcQ(&readyQ, newProc);
+		result = SUCCESS;
 	}
-	state_PTR newState = (exceptionState->s_a1);
-	stateCopy(newState, &(newProc->p_s));
-	newProc->p_supportStruct = (support_t*)(exceptionState->s_a2);
-	insertProcQ(&readyQ, newProc);
-	insertChild(newProc,currentProc);
-	exceptionState->s_pc += WORDLEN;
-	processCount++;
-	switchState(exceptionState);
+	exceptState->s_v0 = result;
+	exceptState->s_pc += WORDLEN;
+	stateCopy(exceptState, &(currentProc->p_s));
+	if(currentProc == NULL) {
+		scheduler();
+	}
+	switchState(&(currentProc->p_s));
 }
 
 /*Terminate the current process, and all of its children*/
 void terminateProcess(pcb_PTR current) {
 	/*Checks if the current node has a child*/
-	while(!emptyChild(current)) 
+	while(emptyChild(current)) 
 	{
 		/*Recurses, using the current node's child as a parameter input*/
 		terminateProcess(current->p_child);
@@ -141,13 +147,20 @@ void terminateProcess(pcb_PTR current) {
 	}
 	
 	/*Checks if current PCB is waiting for I/O*/
-	if(current->p_semAdd >= &deviceSema4s[0] && current->p_semAdd <= &clockSem)
+	else if(current->p_semAdd >= &deviceSema4s[0] && current->p_semAdd <= &clockSem)
 	{
 		/*Copies current's semaphore address to a seperate integer variable*/
 		/*Remove semAdd (current?) from the process queue, returning its pointer*/
 		/*NOTE TO SELF: double check*/
-		pcb_PTR p = outBlocked(current);
-		softBlockCount--;
+		current = outBlocked(current);
+		
+	}
+	else if(current->p_semAdd != NULL) {
+		
+		int *pSem = current->p_semAdd;
+		current = outBlocked(current);
+		(*pSem)++;
+		current->p_semAdd = pSem;
 	}
 	/*Add current to the free PCB list*/
 	/*NOTE TO SELF: double check*/

@@ -22,7 +22,7 @@ void debugB(int a, int b, int c) {
 /*Program for the scheduler, assigns time to processes and begins their execution*/
 void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/
-	
+	debugB(processCount,0,0);
 	if(!emptyProcQ(readyQ)) {
 		currentProc = removeProcQ(&readyQ);
 		
@@ -52,7 +52,6 @@ void scheduler() {
 	else
 	{
 		/*Panic to deal with deadlock*/
-		debugB(&readyQ,3,3);
 		PANIC();
 	}
 	}
