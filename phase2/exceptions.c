@@ -42,30 +42,35 @@ void syscallHandler(int syscallCode)
 		/*SYS1 Create Process*/
 		case CREATEPROCESS: {
 			/*Creates a new process for use*/
-			createProcess(); }
+			createProcess(); 
+			break;}
 			
 		/*SYS2 Terminate Process*/	
 		case TERMPROCESS: {
 			/*Terminates the current process and all of its progeny*/
-			terminateProcess(currentProc); }
+			terminateProcess(currentProc); 
+			break;}
 			
 		/*SYS3 Passaren*/
 		case PASSEREN: {
 			/*Perform a P operation on a semaphore*/
 			/*NOTE TO SELF: write a better comment*/
-			passeren(); }
+			passeren(); 
+			break;}
 			
 		/*SYS4 Verhogen*/	
 		case VERHOGEN: {
 			/*Perform a V operation on a semaphore*/
 			/*NOTE TO SELF: write a better comment*/
-			verhogen(); }
+			verhogen(); 
+			break;}
 			
 		/*SYS5 Wait for IO*/
 		case WAITFORIO: {
 			/*Waits for input or output from a device*/
 			/*NOTE TO SELF: check what this function does, write better comment*/
-			waitForDevice(); }
+			waitForDevice(); 
+			break;}
 			
 		/*SYS6 Get CPU Time*/
 		case GETCPUT: {
@@ -73,12 +78,14 @@ void syscallHandler(int syscallCode)
 			oldState->s_pc += WORDLEN;
 			stateCopy(oldState, &(currentProc->p_s));
 			switchState(&(currentProc->p_s));
+			break;
 			}
 			
 		/*SYS7 Wait for Clock*/
 		case WAITFORCLOCK: {
 			/*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
-			waitForClock(); }
+			waitForClock(); 
+			break;}
 			
 		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
@@ -86,12 +93,19 @@ void syscallHandler(int syscallCode)
 			oldState->s_pc += WORDLEN;
 			stateCopy(oldState, &(currentProc->p_s));
 			switchState(&(currentProc->p_s));
+			break;
 			}
 			
 		/*Sycall code is greater than 8*/
 		default: {			
 			/*Pass up or Die*/
 			passUpOrDie(GENERALEXCEPT); }
+	}
+	if(currentProc != NULL) {
+		switchState(&(currentProc->p_s));
+	}
+	else{
+		scheduler();
 	}
 	
 
@@ -126,14 +140,14 @@ void createProcess() {
 /*Terminate the current process, and all of its children*/
 void terminateProcess(pcb_PTR current) {
 	/*Checks if the current node has a child*/
-	while(emptyChild(current)) 
+	while(!emptyChild(current)) 
 	{
 		/*Recurses, using the current node's child as a parameter input*/
-		terminateProcess(current->p_child);
+		terminateProcess(removeChild(current));
 	}
 	
 	/*Checks if the inputted parameter is the current process*/
-	if(&current == &currentProc)
+	if(current == currentProc)
 	{	
 		/*Disconnect current from its parent*/
 		outChild(current);
@@ -152,15 +166,14 @@ void terminateProcess(pcb_PTR current) {
 		/*Copies current's semaphore address to a seperate integer variable*/
 		/*Remove semAdd (current?) from the process queue, returning its pointer*/
 		/*NOTE TO SELF: double check*/
-		current = outBlocked(current);
+		outBlocked(current);
 		
 	}
 	else if(current->p_semAdd != NULL) {
 		
 		int *pSem = current->p_semAdd;
-		current = outBlocked(current);
+		outBlocked(current);
 		(*pSem)++;
-		current->p_semAdd = pSem;
 	}
 	/*Add current to the free PCB list*/
 	/*NOTE TO SELF: double check*/
@@ -244,8 +257,9 @@ void waitForClock() {
 	currentProc->p_time += (stopTod - startTod);
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	clockSem--;
-	softBlockCount++;
+	
 	if(clockSem < 0) {
+		softBlockCount++;
 		oldState->s_pc += WORDLEN;
 		stateCopy(oldState, &(currentProc->p_s));
 		insertBlocked(&clockSem, currentProc);

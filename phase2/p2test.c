@@ -255,9 +255,7 @@ void test() {
 	print("p3 is started\n");
 
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
-
 	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
-	
 	
 	
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) p5Stack;
@@ -409,6 +407,7 @@ void p4() {
 	switch (p4inc) {
 		case 1:
 			print("first incarnation of p4 starts\n");
+			debugE(1);
 			p4inc++;
 			break;
 		case 2:
@@ -438,7 +437,7 @@ void p4() {
 	SYSCALL(VERHOGEN, (int)&endp4, 0, 0);				/* V(endp4)          */
 
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p4      */
-
+	
 	/* just did a SYS2, so should not get to this point */
 	print("error: p4 didn't terminate\n");
 	PANIC();					/* PANIC            */

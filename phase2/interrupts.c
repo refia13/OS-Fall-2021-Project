@@ -49,7 +49,7 @@ void interruptHandler(state_PTR interruptState) {
 	{
 		nonTimerInterrupt(devrega, TERMINAL);
 	}
-	
+	debugD(99);
 }
 
 void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
@@ -155,6 +155,8 @@ void itInterrupt()
 	}
 	stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
 	switchState(&(currentProc->p_s));
+	insertProcQ(&readyQ, currentProc);
+	scheduler();
 }
 
 
