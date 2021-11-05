@@ -106,10 +106,11 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 
 	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
+		
 		if(p != NULL) {
-			
+			softBlockCount--;	
 			p->p_s.s_v0 = statusCode;
-			softBlockCount--;
+			
 			insertProcQ(&readyQ, p);
 		}
 	}

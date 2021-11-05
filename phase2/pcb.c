@@ -157,19 +157,19 @@ int emptyChild(pcb_PTR p) {
 
 void insertChild(pcb_PTR prnt, pcb_PTR p) {
 	/* Make the pcb pointed to by the p a child of the pcb pointed to by prnt*/
-	pcb_PTR newSib;
-	if(!emptyChild(prnt))
-	{
-		/*Case for when the parent pcb has a child already*/
-		/*Creates a child and adds it to the parent's tree pointers*/
-		newSib = prnt->p_child;
-		p->p_next_sib = newSib;
-		newSib -> p_prev_sib = p;
-		
+	if(!emptyProcQ(p)) {
+	if(emptyChild(prnt)) {
+		prnt->p_child = p;
+		p->p_prnt = prnt;
+		p->p_next_sib = NULL;
+		p->p_prev_sib = NULL;
 	}
-	/*set parents child to be p and set p's parent to be prnt*/
-	prnt->p_child = p;
-	p-> p_prnt=p;
+	else {
+		p->p_next_sib = prnt->p_child;
+		p->p_next_sib->p_prev_sib = p;
+		prnt->p_child = p;
+	}
+	}
 }
 
 pcb_PTR removeChild(pcb_PTR p) {
@@ -178,9 +178,10 @@ pcb_PTR removeChild(pcb_PTR p) {
 		return NULL;
 	}
 	/*Shift tree and remove child*/
-	pcb_PTR temp = p -> p_child;
-	p->p_child = temp -> p_next_sib;
-	return temp;
+	pcb_PTR child = p->p_child;
+	p->p_child = child->p_next_sib;
+	p->p_child->p_prev_sib = NULL;
+	return child;
 }
 
 pcb_PTR outChild(pcb_PTR p) {
@@ -190,21 +191,20 @@ pcb_PTR outChild(pcb_PTR p) {
 		/*p has no parent*/
 		return NULL;
 	}
-	/*Store the previous and next siblings as temporary variables*/
-	pcb_PTR prevTemp = p->p_prev_sib;
-	pcb_PTR nextTemp = p->p_next_sib;
-	
-	/*Ensure that prevTemp and nextTemp exist before shifting tree*/
-	if((prevTemp != NULL))
-	{
-		prevTemp -> p_next_sib = nextTemp;
-		
+	pcb_PTR prnt = p->p_prnt;
+	pcb_PTR currC = prnt->p_child;
+	pcb_PTR lastChild = NULL;
+	if(currC == p) {
+		return removeChild(prnt);
 	}
-	if((nextTemp != NULL))
-	{
-		nextTemp -> p_prev_sib = prevTemp;
-		
+	while(currC != NULL) {
+		if(currC == p) {
+			lastChild->p_next_sib = p->p_next_sib;
+			lastChild->p_prev_sib = p->p_prev_sib;
+			return p;
+		}
+		lastChild = currC;
+		currC = currC->p_next_sib;
 	}
-	
-	return p;
+	return NULL;
 }

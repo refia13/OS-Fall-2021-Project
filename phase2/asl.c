@@ -96,7 +96,9 @@ pcb_PTR removeBlocked(int *semAdd) {
 			/*temp's process queue is empty, remove temp from the ASL*/
 			semdDealloc(temp);
 		}
+		tempPcb->p_semAdd = NULL;
 	}
+	
 	return tempPcb;
 }
 pcb_PTR outBlocked(pcb_PTR p) {
@@ -116,7 +118,9 @@ pcb_PTR outBlocked(pcb_PTR p) {
 			/*temp's process queue is empty, remove temp from the ASL*/
 			semdDealloc(temp);
 		}
+		tempPcb->p_semAdd = NULL;
 	}
+	
 	return tempPcb;
 }
 

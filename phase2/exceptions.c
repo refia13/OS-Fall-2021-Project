@@ -130,10 +130,11 @@ void createProcess() {
 	}
 	exceptState->s_v0 = result;
 	exceptState->s_pc += WORDLEN;
-	stateCopy(exceptState, &(currentProc->p_s));
 	if(currentProc == NULL) {
 		scheduler();
 	}
+	stateCopy(exceptState, &(currentProc->p_s));
+	
 	switchState(&(currentProc->p_s));
 }
 
@@ -161,24 +162,19 @@ void terminateProcess(pcb_PTR current) {
 	}
 	
 	/*Checks if current PCB is waiting for I/O*/
-	else if(current->p_semAdd >= &deviceSema4s[0] && current->p_semAdd <= &clockSem)
-	{
-		/*Copies current's semaphore address to a seperate integer variable*/
-		/*Remove semAdd (current?) from the process queue, returning its pointer*/
-		/*NOTE TO SELF: double check*/
-		outBlocked(current);
-		
-	}
-	else if(current->p_semAdd != NULL) {
-		
-		int *pSem = current->p_semAdd;
-		outBlocked(current);
-		(*pSem)++;
+	else {
+	
+		pcb_PTR p = outBlocked(current);
+		int *sem = current->p_semAdd;
+		if(!(sem >= &deviceSema4s[0] && sem <= &clockSem)){
+			if(p != NULL ) {(*sem)++; }
+		}
 	}
 	/*Add current to the free PCB list*/
 	/*NOTE TO SELF: double check*/
-	freePcb(current);
+	
 	processCount--;
+	freePcb(current);
 }
 
 /*Performs a P operation on a semaphore*/
