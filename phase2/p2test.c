@@ -116,6 +116,10 @@ void debugE(int a) {
 	int i = 0;
 	i++;
 }
+void debugF(int a) {
+	int i = 0;
+	i++;
+}
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
 
@@ -128,7 +132,7 @@ void print(char *msg) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
 		
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);
-			
+		debugF(88);
 		if ((status & TERMSTATMASK) != RECVD) {
 			PANIC(); }
 		s++;	
@@ -269,7 +273,6 @@ void test() {
 	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
 	
 	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
-	debugE(9999);
 	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
 
 	
@@ -405,14 +408,15 @@ void p3() {
 /* p4 -- termination test process */
 void p4() {
 	switch (p4inc) {
-		case 1:
+		case 1: {
 			print("first incarnation of p4 starts\n");
-			debugE(1);
+			debugE(3);
 			p4inc++;
-			break;
-		case 2:
+			break; }
+		case 2: {
+			debugE(99999);
 			print("second incarnation of p4 starts\n");
-			break;
+			break; }
 	}
 
 	SYSCALL(VERHOGEN, (int)&synp4, 0, 0);				/* V(synp4)     */
@@ -429,9 +433,9 @@ void p4() {
 	p4state.s_sp -= QPAGE;		/* give another page  */
 
 	SYSCALL(CREATETHREAD, (int)&p4state, 0, 0);			/* start a new p4    */
-
+	debugE(1);
 	SYSCALL(PASSERN, (int)&synp4, 0, 0);				/* wait for it       */
-
+	
 	print("p4 is OK\n");
 
 	SYSCALL(VERHOGEN, (int)&endp4, 0, 0);				/* V(endp4)          */

@@ -122,9 +122,10 @@ void createProcess() {
 		state_PTR newState = (state_PTR)(exceptState->s_a1);
 		stateCopy(newState, &(newProc->p_s));
 		newProc->p_supportStruct = (support_t*)exceptState->s_a2;
-		insertChild(currentProc, newProc);
+		
 		newProc->p_time = 0;
 		newProc->p_semAdd = NULL;
+		insertChild(currentProc, newProc);
 		insertProcQ(&readyQ, newProc);
 		result = SUCCESS;
 	}

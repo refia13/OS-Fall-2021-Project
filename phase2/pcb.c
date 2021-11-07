@@ -86,19 +86,10 @@ pcb_PTR removeProcQ(pcb_PTR *tp) {
 		/*procQ is empty*/
 		return NULL;
 	}
-	/*Store the head and shift the queue*/
-	pcb_PTR headTemp = (*tp)->p_next;
-	(*tp)->p_next = headTemp->p_next;
-	(*tp)->p_next->p_prev = (*tp);
-	
-	if(headTemp == (*tp))
-	{
-		/*Special case when the queue is going from 1 entry to 0*/
-		(*tp) = mkEmptyProcQ();
+	else {
+		pcb_PTR temp = outProcQ(tp, headProcQ(*tp));
+		return temp;
 	}
-	
-	/*pcb_PTR headTemp = outProcQ(tail,tail->next);*/
-	return headTemp;
 	
 }
 
@@ -109,36 +100,19 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 		/*Queue is Empty*/
 		return NULL;
 	}
-	pcb_PTR current = (*tp);
-	if((*tp) == p)
-	{	/*tail is the pcb being looked for*/
-		if((*tp) == (*tp)->p_next)
-		{
-			/*Tail's next points to itself*/
-			(*tp) = mkEmptyProcQ();
-			return current;
-		}
-		(*tp) -> p_next -> p_prev = (*tp) -> p_prev;
-		(*tp) -> p_prev -> p_next = (*tp) -> p_next;
-		(*tp) = (*tp) -> p_prev;
-		
+	pcb_PTR temp = (*tp) -> p_next;
+	while(temp != p && temp != (*tp)) {
+		temp = temp -> p_next;
 	}
-	current = current -> p_next;
-	int i;
-	for(i=0; i<MAXPROC; i++) {
-		/*Loop through the queue, searching for p. A for loop is used since there is a
-		limited amount of pcbs possible to be on a queue. Since more than MAXPROC cant
-		happen, the loop only needs to run a maximum of MAXPROC times*/
-		if((current) == p)
-		{
-			/*P has been found, shift the queue around and return*/
-			current -> p_next -> p_prev = current -> p_prev;
-			current -> p_prev -> p_next = current -> p_next;
-			return current;
+	
+	if(temp == p) {
+		temp -> p_prev -> p_next = temp -> p_next;
+		temp -> p_next -> p_prev = temp -> p_prev;
+		if(temp == *tp && (*tp) -> p_next == (*tp)) {
+			*tp = NULL;
 		}
-		current = current->p_next;
+		return temp;
 	}
-	/*P was not found*/
 	return NULL;
 
 }

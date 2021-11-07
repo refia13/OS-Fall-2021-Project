@@ -103,7 +103,6 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	}
 	pcb_PTR p;
 	deviceSema4s[devIndex]++;
-
 	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
 		
@@ -119,7 +118,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 		
 		scheduler();
 	}
-	
+
 	switchState(exceptionState);
 }
 
