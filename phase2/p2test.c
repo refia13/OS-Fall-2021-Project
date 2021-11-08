@@ -273,14 +273,15 @@ void test() {
 	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);			/* start p6		*/
 	
 	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);
-	debugF(99);
+	
 				/* start p7		*/
 	SYSCALL(PASSERN, (int)&endp5, 0, 0);							/* P(endp5)		*/ 
 
 	
 	print("p1 knows p5 ended\n");
-
-	SYSCALL(PASSERN, (int)&blkp4, 0, 0);								/* P(blkp4)		*/
+	debugE(20);
+	SYSCALL(PASSERN, (int)&blkp4, 0, 0);
+	debugE(19);						/* P(blkp4)		*/
 
 	/* now for a more rigorous check of process termination */
 	for (p8inc=0; p8inc<4; p8inc++) {
@@ -421,7 +422,7 @@ void p4() {
 			print("second incarnation of p4 starts\n");
 			break; }
 	}
-	debugE(2);
+	
 	SYSCALL(VERHOGEN, (int)&synp4, 0, 0);				/* V(synp4)     */
 	
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);				/* P(blkp4)     */
@@ -558,9 +559,9 @@ void p5b() {
 	}
 
 	/* if p4 and offspring are really dead, this will increment blkp4 */
-
+	debugE(11);
 	SYSCALL(VERHOGEN, (int)&blkp4, 0, 0);			/* V(blkp4) */
-	debugE(111);
+	debugE(blkp4);
 	SYSCALL(VERHOGEN, (int)&endp5, 0, 0);			/* V(endp5) */
 
 	/* should cause a termination       */

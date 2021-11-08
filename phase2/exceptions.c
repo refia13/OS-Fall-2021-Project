@@ -204,16 +204,16 @@ void verhogen() {
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	int *sem = oldState->s_a1;
 	(*sem)++;
-	oldState->s_a1 = *sem;
 	pcb_PTR p;
-	if(oldState->s_a1 >= 0) {
+	if((*sem) <= 0) {
 		debugC(3);
 		p = removeBlocked(sem);
+		p->p_s.s_v0 = sem;
 		if(p != NULL) {
 			insertProcQ(&readyQ, p);
 		}
 	}
-	oldState->s_v0 = oldState->s_a1;
+	oldState->s_v0 = sem;
 	oldState->s_pc+= WORDLEN;
 	
 	stateCopy(oldState, &(currentProc->p_s));

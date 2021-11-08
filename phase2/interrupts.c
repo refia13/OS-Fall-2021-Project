@@ -105,11 +105,9 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	deviceSema4s[devIndex]++;
 	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
-		
 		if(p != NULL) {
 			softBlockCount--;	
 			p->p_s.s_v0 = statusCode;
-			debugD(4);
 			insertProcQ(&readyQ, p);
 		}
 	}
@@ -118,8 +116,8 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 		debugD(5);
 		scheduler();
 	}
-
-	switchState(exceptionState);
+	stateCopy(exceptionState,&(currentProc->p_s));
+	switchState(&(currentProc->p_s));
 }
 
 
@@ -154,7 +152,6 @@ void itInterrupt()
 		scheduler();
 	}
 	stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
-	switchState(&(currentProc->p_s));
 	insertProcQ(&readyQ, currentProc);
 	scheduler();
 }

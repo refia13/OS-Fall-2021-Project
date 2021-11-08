@@ -66,17 +66,17 @@ void insertProcQ(pcb_PTR *tp, pcb_PTR p) {
 		/*procQ is empty*/
 		p -> p_next = p;
 		p -> p_prev = p;
-		*tp = p;
 	}
 	else
 	{
 		/*Append p to the end of the queue and reassign the tail*/
-		p-> p_next = (*tp) -> p_next;
-		p -> p_prev = (*tp);
-		(*tp) -> p_next -> p_prev = p;
-		(*tp) -> p_next = p;
-		(*tp) = p;
+		pcb_PTR temp = (*tp);
+		p->p_next = temp;
+		p->p_prev = temp->p_prev;
+		temp->p_prev = p;
+		p->p_prev->p_next = p;
 	}
+	(*tp) = p;
 }
 
 pcb_PTR removeProcQ(pcb_PTR *tp) {
@@ -88,8 +88,18 @@ pcb_PTR removeProcQ(pcb_PTR *tp) {
 		/*procQ is empty*/
 		return NULL;
 	}
-	pcb_PTR temp = outProcQ(tp, headProcQ(*tp));
-	return temp;
+	pcb_PTR tail = *tp;
+	if(tail->p_prev == tail) {
+		(*tp) = NULL;
+		return tail;
+	}
+	else {
+		pcb_PTR remove = tail->p_prev;
+		remove->p_prev->p_next = remove->p_next;
+		remove->p_next->p_prev = remove->p_prev;
+		return remove;
+	}
+	return NULL;
 	
 }
 
@@ -120,7 +130,7 @@ pcb_PTR headProcQ(pcb_PTR tp) {
 	/*Return a pointer to the first pcb from the queue pointed to by the tail pointer tp. Do not remove this pcb from the queue. Return NULL if the queue is empty*/
 	if(emptyProcQ(tp)) {
 		return NULL; }
-	return (tp->p_next);
+	return (tp->p_prev);
 }
 
 int emptyChild(pcb_PTR p) {
