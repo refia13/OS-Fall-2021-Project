@@ -109,13 +109,13 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 		if(p != NULL) {
 			softBlockCount--;	
 			p->p_s.s_v0 = statusCode;
-			
+			debugD(4);
 			insertProcQ(&readyQ, p);
 		}
 	}
 	exceptionState->s_pc += WORDLEN;
 	if(currentProc == NULL) {
-		
+		debugD(5);
 		scheduler();
 	}
 

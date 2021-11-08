@@ -3,7 +3,10 @@
 #include "../h/pcb.h"
 
 static pcb_PTR pcbList_h; /*Stack of PCBs*/
-
+void debugG(int a) {
+	int i = 0;
+	i++;
+}
 void freePcb(pcb_PTR p) {
 	/*Insert the element pointed to by p onto the pcbFree list. */
 	insertProcQ(&pcbList_h, p);
@@ -68,12 +71,11 @@ void insertProcQ(pcb_PTR *tp, pcb_PTR p) {
 	else
 	{
 		/*Append p to the end of the queue and reassign the tail*/
-		pcb_PTR temp = *tp;
-		*tp = p;
-		p -> p_next = temp -> p_next;
-		temp -> p_next = p;
-		p-> p_prev = temp;
-		p-> p_next -> p_prev = p;
+		p-> p_next = (*tp) -> p_next;
+		p -> p_prev = (*tp);
+		(*tp) -> p_next -> p_prev = p;
+		(*tp) -> p_next = p;
+		(*tp) = p;
 	}
 }
 
@@ -86,10 +88,8 @@ pcb_PTR removeProcQ(pcb_PTR *tp) {
 		/*procQ is empty*/
 		return NULL;
 	}
-	else {
-		pcb_PTR temp = outProcQ(tp, headProcQ(*tp));
-		return temp;
-	}
+	pcb_PTR temp = outProcQ(tp, headProcQ(*tp));
+	return temp;
 	
 }
 
@@ -100,21 +100,37 @@ pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 		/*Queue is Empty*/
 		return NULL;
 	}
-	pcb_PTR temp = (*tp) -> p_next;
-	while(temp != p && temp != (*tp)) {
-		temp = temp -> p_next;
-	}
-	
-	if(temp == p) {
-		temp -> p_prev -> p_next = temp -> p_next;
-		temp -> p_next -> p_prev = temp -> p_prev;
-		if(temp == *tp && (*tp) -> p_next == (*tp)) {
-			*tp = NULL;
+	pcb_PTR current = (*tp);
+	if((*tp) == p)
+	{	/*tail is the pcb being looked for*/
+		if((*tp) == (*tp)->p_next)
+		{
+			/*Tail's next points to itself*/
+			(*tp) = mkEmptyProcQ();
+			return current;
 		}
-		return temp;
+		(*tp) -> p_next -> p_prev = (*tp) -> p_prev;
+		(*tp) -> p_prev -> p_next = (*tp) -> p_next;
+		(*tp) = (*tp) -> p_prev;
+		
 	}
+	current = current -> p_next;
+	int i;
+	for(i=0; i<MAXPROC; i++) {
+		/*Loop through the queue, searching for p. A for loop is used since there is a
+		limited amount of pcbs possible to be on a queue. Since more than MAXPROC cant
+		happen, the loop only needs to run a maximum of MAXPROC times*/
+		if((current) == p)
+		{
+			/*P has been found, shift the queue around and return*/
+			current -> p_next -> p_prev = current -> p_prev;
+			current -> p_prev -> p_next = current -> p_next;
+			return current;
+		}
+		current = current->p_next;
+	}
+	/*P was not found*/
 	return NULL;
-
 }
 
 pcb_PTR headProcQ(pcb_PTR tp) {

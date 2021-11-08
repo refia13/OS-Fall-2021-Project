@@ -100,7 +100,7 @@ int genExceptionHandler() {
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
 	else if(excCode <= TLBREFILLEXCEPT)
 	{
-		uTLB_RefillHandler();
+		passUpOrDie(PGFAULTEXCEPT);
 	}
 	/*Case 3 Code == 8: SYSCALL*/
 	else if(excCode == SYSCALLEXCEPT)

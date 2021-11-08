@@ -122,7 +122,6 @@ void createProcess() {
 		state_PTR newState = (state_PTR)(exceptState->s_a1);
 		stateCopy(newState, &(newProc->p_s));
 		newProc->p_supportStruct = (support_t*)exceptState->s_a2;
-		
 		newProc->p_time = 0;
 		newProc->p_semAdd = NULL;
 		insertChild(currentProc, newProc);
@@ -208,10 +207,11 @@ void verhogen() {
 	oldState->s_a1 = *sem;
 	pcb_PTR p;
 	if(oldState->s_a1 >= 0) {
+		debugC(3);
 		p = removeBlocked(sem);
-		if(p != NULL) 
+		if(p != NULL) {
 			insertProcQ(&readyQ, p);
-		
+		}
 	}
 	oldState->s_v0 = oldState->s_a1;
 	oldState->s_pc+= WORDLEN;

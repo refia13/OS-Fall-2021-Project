@@ -132,7 +132,7 @@ void print(char *msg) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
 		
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);
-		debugF(88);
+		
 		if ((status & TERMSTATMASK) != RECVD) {
 			PANIC(); }
 		s++;	
@@ -259,8 +259,8 @@ void test() {
 	print("p3 is started\n");
 
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
-	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
-	
+	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);			/* start p4     */
+	debugF(99);
 	
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) p5Stack;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
@@ -269,11 +269,13 @@ void test() {
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_pc =  (memaddr) p5mm;
 	
-	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
-	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
+	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0);	/* start p5     */
+	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);			/* start p6		*/
 	
-	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
-	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
+	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);
+	debugF(99);
+				/* start p7		*/
+	SYSCALL(PASSERN, (int)&endp5, 0, 0);							/* P(endp5)		*/ 
 
 	
 	print("p1 knows p5 ended\n");
@@ -407,20 +409,21 @@ void p3() {
 
 /* p4 -- termination test process */
 void p4() {
+	
 	switch (p4inc) {
 		case 1: {
+			debugF(3);
 			print("first incarnation of p4 starts\n");
-			debugE(3);
+			
 			p4inc++;
 			break; }
 		case 2: {
-			debugE(99999);
 			print("second incarnation of p4 starts\n");
 			break; }
 	}
-
+	debugE(2);
 	SYSCALL(VERHOGEN, (int)&synp4, 0, 0);				/* V(synp4)     */
-
+	
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);				/* P(blkp4)     */
 
 	SYSCALL(PASSERN, (int)&synp4, 0, 0);				/* P(synp4)     */
@@ -543,7 +546,7 @@ void p5b() {
 	cpu_t		time1, time2;
 
 	SYSCALL(9, 0, 0, 0);
-	SYSCALL(PASSERN, (int)&endp4, 0, 0);			/* P(endp4)*/
+	/*SYSCALL(PASSERN, (int)&endp4, 0, 0);*/			/* P(endp4)*/
 
 	/* do some delay to be reasonably sure p4 and its offspring are dead */
 	time1 = 0;
@@ -557,7 +560,7 @@ void p5b() {
 	/* if p4 and offspring are really dead, this will increment blkp4 */
 
 	SYSCALL(VERHOGEN, (int)&blkp4, 0, 0);			/* V(blkp4) */
-
+	debugE(111);
 	SYSCALL(VERHOGEN, (int)&endp5, 0, 0);			/* V(endp5) */
 
 	/* should cause a termination       */
@@ -582,7 +585,7 @@ void p6() {
 
 	SYSCALL(9, 0, 0, 0);		/* should cause termination because p6 has no 
 			  trap vector */
-
+	
 	print("error: p6 alive after SYS9() with no trap vector\n");
 
 	PANIC();
