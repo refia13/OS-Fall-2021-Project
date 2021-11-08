@@ -95,48 +95,31 @@ pcb_PTR removeProcQ(pcb_PTR *tp) {
 
 pcb_PTR outProcQ(pcb_PTR *tp, pcb_PTR p) {
 	/*Remove the pcb pointed to by p from the queue pointed to by the tail pointer tp. Return NULL if the desired pcb is not in the given queue, otherwise return p. Note that p can point to any pcb in the queue. */
-	if(emptyProcQ(*tp)) 
-	{
-		/*Queue is Empty*/
-		return NULL;
+	pcb_PTR tail = (*tp);
+	if(emptyProcQ(p)) return NULL;
+	if(emptyProcQ(tail)) return NULL;
+	pcb_PTR temp = tail->p_next;
+	while(temp != p && temp != tail) {
+		temp = temp->p_next;
 	}
-	pcb_PTR current = (*tp);
-	if((*tp) == p)
-	{	/*tail is the pcb being looked for*/
-		if((*tp) == (*tp)->p_next)
-		{
-			/*Tail's next points to itself*/
-			(*tp) = mkEmptyProcQ();
-			return current;
+	if(temp == p) {
+		p->p_next->p_prev = p->p_prev;
+		p->p_prev->p_next = p->p_next;
+		if(temp == tail && tail->p_next == tail) {
+			(*tp) = NULL;
 		}
-		(*tp) -> p_next -> p_prev = (*tp) -> p_prev;
-		(*tp) -> p_prev -> p_next = (*tp) -> p_next;
-		(*tp) = (*tp) -> p_prev;
-		
-	}
-	current = current -> p_next;
-	int i;
-	for(i=0; i<MAXPROC; i++) {
-		/*Loop through the queue, searching for p. A for loop is used since there is a
-		limited amount of pcbs possible to be on a queue. Since more than MAXPROC cant
-		happen, the loop only needs to run a maximum of MAXPROC times*/
-		if((current) == p)
-		{
-			/*P has been found, shift the queue around and return*/
-			current -> p_next -> p_prev = current -> p_prev;
-			current -> p_prev -> p_next = current -> p_next;
-			return current;
+		else if(temp == tail) {
+			(*tp) = tail->p_next;
 		}
-		current = current->p_next;
+		return temp;
 	}
-	/*P was not found*/
-	return NULL;
+	else { return NULL; }
 }
 
 pcb_PTR headProcQ(pcb_PTR tp) {
 	/*Return a pointer to the first pcb from the queue pointed to by the tail pointer tp. Do not remove this pcb from the queue. Return NULL if the queue is empty*/
-	if(emptyProcQ(tp))
-		return NULL;
+	if(emptyProcQ(tp)) {
+		return NULL; }
 	return (tp->p_next);
 }
 
