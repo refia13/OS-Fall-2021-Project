@@ -278,13 +278,14 @@ void test() {
 
 	/* now for a more rigorous check of process termination */
 	for (p8inc=0; p8inc<4; p8inc++) {
+		debugE(11);
 		creation = SYSCALL(CREATETHREAD, (int)&p8rootstate, (int) NULL, 0);
 
 		if (creation == CREATENOGOOD) {
 			print("error in process termination\n");
 			PANIC();
 		}
-
+		
 		SYSCALL(PASSERN, (int)&endp8, 0, 0);
 	}
 
@@ -547,7 +548,7 @@ void p5b() {
 	}
 
 	/* if p4 and offspring are really dead, this will increment blkp4 */
-
+	blkp4++;
 	SYSCALL(VERHOGEN, (int)&blkp4, 0, 0);			/* V(blkp4) */
 
 	SYSCALL(VERHOGEN, (int)&endp5, 0, 0);			/* V(endp5) */
@@ -604,6 +605,7 @@ void p8root() {
 	SYSCALL(CREATETHREAD, (int)&child2state, (int) NULL, 0);
 
 	for (grandchild=0; grandchild < NOLEAVES; grandchild++) {
+		debugE(220);
 		SYSCALL(PASSERN, (int)&endcreate, 0, 0);
 	}
 	
@@ -640,7 +642,7 @@ void p8leaf() {
 	print("leaf process starts\n");
 	
 	SYSCALL(VERHOGEN, (int)&endcreate, 0, 0);
-
+	
 	SYSCALL(PASSERN, (int)&blkp8, 0, 0);
 }
 

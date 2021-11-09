@@ -145,12 +145,13 @@ void terminateProcess(pcb_PTR current) {
 	{
 		/*Recurses, using the current node's child as a parameter input*/
 		terminateProcess(removeChild(current));
+		processCount--;
 	}
 	
 	if(current == currentProc) {
-		outChild(current);
-		currentProc = NULL;
-		processCount --;
+		outChild(currentProc);
+		processCount--;
+		freePcb(currentProc);
 		scheduler();
 	}
 	if(current->p_semAdd != NULL) {
@@ -164,8 +165,9 @@ void terminateProcess(pcb_PTR current) {
 	}
 	else {
 		pcb_PTR p = outProcQ(&readyQ, current);
-		if(p != NULL) { processCount--; }
+		processCount--;
 	}
+	
 	freePcb(current);
 }
 
@@ -198,9 +200,7 @@ void verhogen() {
 	(*sem)++;
 	pcb_PTR p;
 	if((*sem) <= 0) {
-		debugC(3);
 		p = removeBlocked(sem);
-		p->p_s.s_v0 = sem;
 		if(p != NULL) {
 			insertProcQ(&readyQ, p);
 		}
@@ -262,14 +262,14 @@ void waitForClock() {
 void passUpOrDie(unsigned int passUpCase)
 {
 	/*Support_t is not NULL*/
-	if(currentProc->p_supportStruct != NULL) {
+	if((currentProc->p_supportStruct) != NULL) {
 		/*Pass Up*/
 		state_PTR exceptStatePtr = (state_PTR) EXCEPTSTATEADDR;
 		stateCopy(exceptStatePtr, &(currentProc->p_supportStruct->sup_exceptState[passUpCase]));
 		int newPc = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_pc;
 		int newStackPtr = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_stackPtr;
 		int newStatus = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_status;
-		LDCXT(newStackPtr, newStatus, newPc);
+		LDCXT(currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_stackPtr, currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_status, currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_pc);
 	}
 	else {/*Die*/
 		/*Terminate the current process*/

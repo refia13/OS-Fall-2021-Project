@@ -84,7 +84,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	/*special case device is a terminal*/
 	if(lineNo == 7)
 	{
-		statusCode = devRegA->devreg[devIndex].t_transm_status;
+		statusCode = devRegA->devreg[devIndex].t_transm_status & 0xFF;
 		if(statusCode != READY) {
 			
 			devRegA->devreg[devIndex].t_transm_command = ACK;
@@ -111,7 +111,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 			insertProcQ(&readyQ, p);
 		}
 	}
-	exceptionState->s_pc += WORDLEN;
+	
 	if(currentProc == NULL) {
 		debugD(5);
 		scheduler();
