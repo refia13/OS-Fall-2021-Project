@@ -121,7 +121,7 @@ void createProcess() {
 		processCount++;
 		state_PTR newState = (state_PTR)(exceptState->s_a1);
 		stateCopy(newState, &(newProc->p_s));
-		newProc->p_supportStruct = (support_t*)exceptState->s_a2;
+		newProc->p_supportStruct = exceptState->s_a2;
 		newProc->p_time = 0;
 		newProc->p_semAdd = NULL;
 		insertChild(currentProc, newProc);
@@ -147,33 +147,25 @@ void terminateProcess(pcb_PTR current) {
 		terminateProcess(removeChild(current));
 	}
 	
-	/*Checks if the inputted parameter is the current process*/
-	if(current == currentProc)
-	{	
-		/*Disconnect current from its parent*/
+	if(current == currentProc) {
 		outChild(current);
+		currentProc = NULL;
+		processCount --;
+		scheduler();
 	}
-	
-	/*Checks if current's semaphore address is NULL*/
-	if(current->p_semAdd == NULL)
-	{	
-		/*Remove current from the ready queue*/
-		outProcQ(&readyQ, current);
-	}
-	
-	/*Checks if current PCB is waiting for I/O*/
-	else {
-	
-		pcb_PTR p = outBlocked(current);
-		int *sem = current->p_semAdd;
-		if(!(sem >= &deviceSema4s[0] && sem <= &clockSem)){
-			if(p != NULL ) {(*sem)++; }
+	if(current->p_semAdd != NULL) {
+		if(!(current->p_semAdd <= &deviceSema4s[0] && current->p_semAdd >= &clockSem))
+		{
+			int *sem = current->p_semAdd;
+			(*sem)++;
 		}
+		pcb_PTR p = outBlocked(current->p_semAdd);
+		processCount--;
 	}
-	/*Add current to the free PCB list*/
-	/*NOTE TO SELF: double check*/
-	
-	processCount--;
+	else {
+		pcb_PTR p = outProcQ(&readyQ, current);
+		if(p != NULL) { processCount--; }
+	}
 	freePcb(current);
 }
 
@@ -272,20 +264,16 @@ void passUpOrDie(unsigned int passUpCase)
 	/*Support_t is not NULL*/
 	if(currentProc->p_supportStruct != NULL) {
 		/*Pass Up*/
-		/*The current process' exception state is modified*/
-		/*NOTE TO SELF: details needed*/
 		state_PTR exceptStatePtr = (state_PTR) EXCEPTSTATEADDR;
-		stateCopy(exceptStatePtr, &currentProc->p_supportStruct->sup_exceptState[passUpCase]);
-		unsigned int newPc = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_pc;
-		unsigned int newStackPtr = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_stackPtr;
-		unsigned int newStatus = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_status;
-		/*NOTE TO SELF: figure out wtf this does*/
+		stateCopy(exceptStatePtr, &(currentProc->p_supportStruct->sup_exceptState[passUpCase]));
+		int newPc = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_pc;
+		int newStackPtr = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_stackPtr;
+		int newStatus = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_status;
 		LDCXT(newStackPtr, newStatus, newPc);
 	}
 	else {/*Die*/
 		/*Terminate the current process*/
-		terminateProcess(currentProc);
-		scheduler(); }
+		terminateProcess(currentProc); }
 }
 /*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value GENERALEXCEPT*/
 void programTrapHandler() {

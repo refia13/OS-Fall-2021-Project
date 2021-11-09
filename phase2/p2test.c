@@ -111,14 +111,11 @@ void	p5sys(),p8root(),child1(),child2(),p8leaf();
 extern void p5gen ();
 extern void p5mm ();
 
-void debugE(int a) {
-
-	int i = 0;
-	i++;
+int debugE(int a) {
+	return 0;
 }
-void debugF(int a) {
-	int i = 0;
-	i++;
+int debugF(int a) {
+	return 1;
 }
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
@@ -130,11 +127,9 @@ void print(char *msg) {
 	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		
-		status = SYSCALL(WAITIO, TERMINT, 0, 0);
-		
-		if ((status & TERMSTATMASK) != RECVD) {
-			PANIC(); }
+		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
+		if ((status & TERMSTATMASK) != RECVD)
+			PANIC();
 		s++;	
 	}
 	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);				/* V(term_mut) */
@@ -157,13 +152,12 @@ void uTLB_RefillHandler () {
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
-void test() {
+void test() {	
 	
-	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);
-						/* V(testsem)   */
+	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
+
 	print("p1 v(testsem)\n");
 
-	
 	/* set up states of the other processes */
 
 	/* set up p2's state */
@@ -242,26 +236,27 @@ void test() {
 	gchild4state.s_pc = gchild4state.s_t9 = (memaddr)p8leaf;
 	gchild4state.s_status = gchild4state.s_status | IEPBITON | CAUSEINTMASK | TEBITON;
 	
-
 	/* create process p2 */
 	SYSCALL(CREATETHREAD, (int)&p2state, (int) NULL , 0);				/* start p2     */
 
 	print("p2 was started\n");
-	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);	
-								/* V(startp2)   */
-	SYSCALL(PASSERN, (int)&endp2, 0, 0);
-								/* P(endp2)     */
+
+	SYSCALL(VERHOGEN, (int)&startp2, 0, 0);								/* V(startp2)   */
+
+	SYSCALL(PASSERN, (int)&endp2, 0, 0);								/* P(endp2)     */
+
 	/* make sure we really blocked */
 	if (p1p2synch == 0)
 		print("error: p1/p2 synchronization bad\n");
 
 	SYSCALL(CREATETHREAD, (int)&p3state, (int) NULL, 0);				/* start p3     */
+
 	print("p3 is started\n");
 
 	SYSCALL(PASSERN, (int)&endp3, 0, 0);								/* P(endp3)     */
-	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);			/* start p4     */
-	debugF(99);
-	
+
+	SYSCALL(CREATETHREAD, (int)&p4state, (int) NULL, 0);				/* start p4     */
+
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) p5Stack;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[GENERALEXCEPT].c_pc =  (memaddr) p5gen;
@@ -269,19 +264,17 @@ void test() {
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_pc =  (memaddr) p5mm;
 	
-	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0);	/* start p5     */
-	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);			/* start p6		*/
-	
-	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);
-	
-				/* start p7		*/
-	SYSCALL(PASSERN, (int)&endp5, 0, 0);							/* P(endp5)		*/ 
+	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
 
-	
+	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
+
+	SYSCALL(CREATETHREAD, (int)&p7state, (int) NULL, 0);				/* start p7		*/
+
+	SYSCALL(PASSERN, (int)&endp5, 0, 0);								/* P(endp5)		*/ 
+
 	print("p1 knows p5 ended\n");
-	debugE(20);
-	SYSCALL(PASSERN, (int)&blkp4, 0, 0);
-	debugE(19);						/* P(blkp4)		*/
+
+	SYSCALL(PASSERN, (int)&blkp4, 0, 0);								/* P(blkp4)		*/
 
 	/* now for a more rigorous check of process termination */
 	for (p8inc=0; p8inc<4; p8inc++) {
@@ -309,10 +302,9 @@ void p2() {
 	int		i;				/* just to waste time  */
 	cpu_t	now1,now2;		/* times of day        */
 	cpu_t	cpu_t1,cpu_t2;	/* cpu time used       */
-	
-	
+
 	SYSCALL(PASSERN, (int)&startp2, 0, 0);				/* P(startp2)   */
-	
+
 	print("p2 starts\n");
 
 	/* initialize all semaphores in the s[] array */
@@ -321,8 +313,7 @@ void p2() {
 
 	/* V, then P, all of the semaphores in the s[] array */
 	for (i=0; i<= MAXSEM; i++)  {
-		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);
-					/* V(S[I]) */
+		SYSCALL(VERHOGEN, (int)&s[i], 0, 0);			/* V(S[I]) */
 		SYSCALL(PASSERN, (int)&s[i], 0, 0);			/* P(S[I]) */
 		if (s[i] != 0)
 			print("error: p2 bad v/p pairs\n");
@@ -338,9 +329,10 @@ void p2() {
 	/* delay for several milliseconds */
 	for (i=1; i < LOOPNUM; i++)
 		;
+
 	cpu_t2 = SYSCALL(GETCPUTIME, 0, 0, 0);			/* CPU time used */
-	
 	STCK(now2);				/* time of day  */
+
 	if (((now2 - now1) >= (cpu_t2 - cpu_t1)) &&
 			((cpu_t2 - cpu_t1) >= (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR)))))
 		print("p2 is OK\n");
@@ -349,12 +341,11 @@ void p2() {
 			print ("error: more cpu time than real time\n");
 		if ((cpu_t2 - cpu_t1) < (MINLOOPTIME / (* ((cpu_t *)TIMESCALEADDR))))
 			print ("error: not enough cpu time went by\n");
-		
 		print("p2 blew it!\n");
 	}
 
 	p1p2synch = 1;				/* p1 will check this */
-	
+
 	SYSCALL(VERHOGEN, (int)&endp2, 0, 0);				/* V(endp2)     */
 
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p2 */
@@ -410,21 +401,18 @@ void p3() {
 
 /* p4 -- termination test process */
 void p4() {
-	
 	switch (p4inc) {
-		case 1: {
-			debugF(3);
+		case 1:
 			print("first incarnation of p4 starts\n");
-			
 			p4inc++;
-			break; }
-		case 2: {
+			break;
+		case 2:
 			print("second incarnation of p4 starts\n");
-			break; }
+			break;
 	}
-	
+
 	SYSCALL(VERHOGEN, (int)&synp4, 0, 0);				/* V(synp4)     */
-	
+
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);				/* P(blkp4)     */
 
 	SYSCALL(PASSERN, (int)&synp4, 0, 0);				/* P(synp4)     */
@@ -437,15 +425,15 @@ void p4() {
 	p4state.s_sp -= QPAGE;		/* give another page  */
 
 	SYSCALL(CREATETHREAD, (int)&p4state, 0, 0);			/* start a new p4    */
-	debugE(1);
+
 	SYSCALL(PASSERN, (int)&synp4, 0, 0);				/* wait for it       */
-	
+
 	print("p4 is OK\n");
 
 	SYSCALL(VERHOGEN, (int)&endp4, 0, 0);				/* V(endp4)          */
 
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p4      */
-	
+
 	/* just did a SYS2, so should not get to this point */
 	print("error: p4 didn't terminate\n");
 	PANIC();					/* PANIC            */
@@ -505,7 +493,7 @@ void p5mm() {
 	pFiveSupport.sup_exceptState[PGFAULTEXCEPT].s_status = pFiveSupport.sup_exceptState[PGFAULTEXCEPT].s_status | KUPBITON;	/* user mode on 	*/
 	pFiveSupport.sup_exceptState[PGFAULTEXCEPT].s_pc = (memaddr)p5b;   						/* return to p5b()	*/
 	pFiveSupport.sup_exceptState[PGFAULTEXCEPT].s_t9 = (memaddr)p5b;						/* return to p5b()	*/
-
+	debugE(1001);
 	LDST(&(pFiveSupport.sup_exceptState[PGFAULTEXCEPT]));
 }
 
@@ -514,13 +502,13 @@ void p5sys() {
 	unsigned int p5status = pFiveSupport.sup_exceptState[GENERALEXCEPT].s_status;
 	p5status = (p5status << 28) >> 31; 
 	switch(p5status) {
-	case ON: {
+	case ON:
 		print("High level SYS call from user mode process\n");
-		break; }
+		break;
 	
-	case OFF: {
+	case OFF:
 		print("High level SYS call from kernel mode process\n");
-		break; }
+		break;
 	}
 	pFiveSupport.sup_exceptState[GENERALEXCEPT].s_pc = pFiveSupport.sup_exceptState[GENERALEXCEPT].s_pc + 4;   /*	 to avoid SYS looping */
 	LDST(&(pFiveSupport.sup_exceptState[GENERALEXCEPT]));
@@ -547,7 +535,7 @@ void p5b() {
 	cpu_t		time1, time2;
 
 	SYSCALL(9, 0, 0, 0);
-	/*SYSCALL(PASSERN, (int)&endp4, 0, 0);*/			/* P(endp4)*/
+	SYSCALL(PASSERN, (int)&endp4, 0, 0);			/* P(endp4)*/
 
 	/* do some delay to be reasonably sure p4 and its offspring are dead */
 	time1 = 0;
@@ -559,9 +547,9 @@ void p5b() {
 	}
 
 	/* if p4 and offspring are really dead, this will increment blkp4 */
-	debugE(11);
+
 	SYSCALL(VERHOGEN, (int)&blkp4, 0, 0);			/* V(blkp4) */
-	debugE(blkp4);
+
 	SYSCALL(VERHOGEN, (int)&endp5, 0, 0);			/* V(endp5) */
 
 	/* should cause a termination       */
@@ -586,7 +574,7 @@ void p6() {
 
 	SYSCALL(9, 0, 0, 0);		/* should cause termination because p6 has no 
 			  trap vector */
-	
+
 	print("error: p6 alive after SYS9() with no trap vector\n");
 
 	PANIC();

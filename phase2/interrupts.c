@@ -127,7 +127,7 @@ void pltInterrupt() {
 
 	int stopTod;
 	STCK(stopTod);
-	setTIMER(TIMESLICE);
+	
 	if(currentProc != NULL) {
 		stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
 		currentProc->p_time += (stopTod - startTod);
@@ -135,6 +135,7 @@ void pltInterrupt() {
 		currentProc = NULL;
 	}
 	STCK(startTod);
+	setTIMER(TIMESLICE);
 	scheduler();
 }
 
