@@ -432,7 +432,7 @@ void p4() {
 	print("p4 is OK\n");
 
 	SYSCALL(VERHOGEN, (int)&endp4, 0, 0);				/* V(endp4)          */
-
+	debugE(11);
 	SYSCALL(TERMINATETHREAD, 0, 0, 0);			/* terminate p4      */
 
 	/* just did a SYS2, so should not get to this point */
@@ -548,7 +548,7 @@ void p5b() {
 	}
 
 	/* if p4 and offspring are really dead, this will increment blkp4 */
-	blkp4++;
+	
 	SYSCALL(VERHOGEN, (int)&blkp4, 0, 0);			/* V(blkp4) */
 
 	SYSCALL(VERHOGEN, (int)&endp5, 0, 0);			/* V(endp5) */

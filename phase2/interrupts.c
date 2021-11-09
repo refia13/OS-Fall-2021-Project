@@ -37,6 +37,9 @@ void interruptHandler(state_PTR interruptState) {
 	{
 		nonTimerInterrupt(devrega, DISK);
 	}
+	if(cause & NETWORKINTERRUPT) {
+		nonTimerInterrupt(devrega, NETWORK);
+	}
 	if(cause & FLASHINTERRUPT)
 	{
 		nonTimerInterrupt(devrega, FLASH);

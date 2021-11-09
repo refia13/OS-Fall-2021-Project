@@ -144,8 +144,31 @@ void terminateProcess(pcb_PTR current) {
 	while(!emptyChild(current)) 
 	{
 		/*Recurses, using the current node's child as a parameter input*/
-		terminateProcess(removeChild(current));
+		pcb_PTR next = removeChild(current);
+		terminateProcess(next);
 		processCount--;
+		
+	}
+	
+	
+	debugC(current->p_semAdd);
+	if((current->p_semAdd) != NULL) {
+		debugC(current->p_semAdd);
+		if((current->p_semAdd >= &deviceSema4s[0]) && (current->p_semAdd <= &clockSem))
+		{
+			softBlockCount--;
+		}
+		else {
+			int *sem = current->p_semAdd;
+			debugC((*sem));
+			(*sem) += 1;
+		}
+		pcb_PTR p = outBlocked(current);
+		
+	}
+	else {
+		pcb_PTR p = outProcQ(&readyQ, current);
+		
 	}
 	
 	if(current == currentProc) {
@@ -153,19 +176,6 @@ void terminateProcess(pcb_PTR current) {
 		processCount--;
 		freePcb(currentProc);
 		scheduler();
-	}
-	if(current->p_semAdd != NULL) {
-		if(!(current->p_semAdd <= &deviceSema4s[0] && current->p_semAdd >= &clockSem))
-		{
-			int *sem = current->p_semAdd;
-			(*sem)++;
-		}
-		pcb_PTR p = outBlocked(current->p_semAdd);
-		processCount--;
-	}
-	else {
-		pcb_PTR p = outProcQ(&readyQ, current);
-		processCount--;
 	}
 	
 	freePcb(current);
@@ -182,6 +192,7 @@ void passeren() {
 	oldState->s_pc+= WORDLEN;
 	stateCopy(oldState, &(currentProc->p_s));
 	if( (*sem) < 0) {
+		currentProc->p_semAdd = sem;
 		insertBlocked(sem, currentProc);
 		currentProc = NULL;
 		scheduler();
@@ -277,7 +288,7 @@ void passUpOrDie(unsigned int passUpCase)
 }
 /*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value GENERALEXCEPT*/
 void programTrapHandler() {
-	debugC(4000);
+	
 	passUpOrDie(GENERALEXCEPT);
 }
 /*Nucleus level tlbException Handler, performs a passUpOrDie operation with the value PGFAULTEXCEPT*/
