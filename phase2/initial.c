@@ -9,24 +9,29 @@
 #include "../h/interrupts.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-
+/*Initial process*/
 extern void test();
+/*External function, handles user TLB refill events*/
 extern void uTLB_RefillHandler();
+/*External function, handles syscalls 1-8, I/O, and program traps, performing pass up or die for anything else*/
 extern int genExceptionHandler();
+/*External function, handles TLB related exceptions, performs pass up or die with PGFAULTEXCEPT value*/
 extern void tlbExceptionHandler();
+/*Passes up to higher level of OS or terminates process based on support structure pointer*/
 extern void passUpOrDie();
+/*The number of processes*/
 int processCount;
+/*The number of processes waiting on I/O*/
 int softBlockCount;
+/*Ready queue, a queue of processes in the ready state*/
 pcb_PTR readyQ;
+/*The current process running*/
 pcb_PTR currentProc;
+/*Starting time of day at the beginning of an interval*/
 int startTod;
+/*Array of 49 syncronization semaphores for devices*/
 int deviceSema4s[SEMCOUNT];
-int startTod;
-/*Initial.c's debugFunction*/
-void debugA(int a, int b) {
-	int i = 0;
-	i++;
-}
+
 /*
 This is the main function for the PANDOS Nucleus. It initializes the pcbs, asl, global variables,
 and 
@@ -39,6 +44,7 @@ int main() {
 	pv->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
 	pv->tlb_refll_stackPtr = (memaddr) STACKADDRESS;
 	
+	/*Store current time of day in startTod to mark the beginning of an interval*/
 	STCK(startTod);
 	
 	/*Set the nucleus exception handler*/
@@ -48,9 +54,11 @@ int main() {
 	devrega = (devregarea_t*) BUSADDRESS;
 	memaddr ramtop;
 	ramtop = (devrega->rambase) + (devrega->ramsize);
+	
 	/*Initialize the pcbs and ASL*/
 	initPcbs();
 	initASL();
+	
 	/*Initialize the global variables*/
 	processCount = 0;
 	softBlockCount = 0;
@@ -64,20 +72,24 @@ int main() {
 	
 	/*Load the system wide interval timer with 100 milliseconds*/
 	LDIT(ITSECOND);
+	
 	/*Allocate the first pcb and insert it onto the readyQ*/
 	pcb_PTR tempPcb;
 	tempPcb = allocPcb();
+	
 	/*set up the first processor state*/
 	state_t initialState;
 	initialState.s_pc = (memaddr) test;
 	initialState.s_status = ALLOFF | IEPON | IMON | TEON;
 	initialState.s_sp = ramtop;
 	initialState.s_t9 = (memaddr) test;
+	
 	/*StateCopy used rather than directly editing the registers for encapsulation purposes*/
 	stateCopy(&initialState, &tempPcb->p_s);
 	insertProcQ(&readyQ,tempPcb);
 	processCount++;
 	
+	/*Call the scheduler*/
 	scheduler();
 	return 0;
 }
@@ -112,6 +124,8 @@ int genExceptionHandler() {
 	else {
 		passUpOrDie(GENERALEXCEPT);
 	}
+	
+	/*Error handling, should not be able to get here, serious issue if this is called*/
 	programTrapHandler();
 	return 0;
 }
