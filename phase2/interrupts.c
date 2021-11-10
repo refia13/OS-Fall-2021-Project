@@ -9,19 +9,18 @@
 #include "../h/interrupts.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+/*External function provided by umps, loads plt with given value*/
 extern unsigned int setTIMER(unsigned int t);
+/*Interval timer interrupt handler*/
 void itInterrupt();
+/*Process local timer interrupt handler*/
 void pltInterrupt();
+/*Peripheral device interrupt handler*/
 void nonTimerInterrupt(devregarea_t *devRegA, int lineNo);
-
-void debugD(int a) {
-	int i = 0;
-	i++;
-}
 
 /*General Interrupt Handler, determines the lineNo of the pending interrupt and moves into the appropriate interrupt handling function*/
 void interruptHandler(state_PTR interruptState) {
-	
+	/*Computes line number to ensure lower line number interrupts have higher priority*/
 	int cause = interruptState->s_cause;
 	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
 	if(cause & PLTINTERRUPT)
@@ -52,9 +51,9 @@ void interruptHandler(state_PTR interruptState) {
 	{
 		nonTimerInterrupt(devrega, TERMINAL);
 	}
-	debugD(99);
 }
 
+/*Peripheral device interrupt handler, takes pointer to dev register area and line number*/
 void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 
 	/*Determine which deviceNo is interrupting*/
@@ -80,81 +79,100 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 		devNo = 7; }
 
 	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
-	/*Calculate the address for the device register*/
+	
+	/*Compute index of device semaphore and device register*/
 	int devIndex = ((lineNo - 3) * 8) + (devNo);
 	int statusCode;
 	
-	/*special case device is a terminal*/
+	/*Special case device is a terminal*/
 	if(lineNo == 7)
 	{
 		statusCode = devRegA->devreg[devIndex].t_transm_status & 0xFF;
 		if(statusCode != READY) {
-			
+			/*Transmit was interrupting, send an ACK*/
 			devRegA->devreg[devIndex].t_transm_command = ACK;
 		}
 		else{
+			/*Recieve was interrupting, store off status then send an ACK, increment devIndex for appropriate dev semaphore*/
 			statusCode = devRegA->devreg[devIndex].t_recv_status & 0xFF;
 			devRegA->devreg[devIndex].t_recv_command = ACK;
 			devIndex+= 8;
 		}
 		
-	}
-	else {
+	}else {
 	/*Not a terminal*/
+		/*Store off status and send an ACK*/
 		statusCode = devRegA->devreg[devIndex].d_status;
 		devRegA->devreg[devIndex].d_command = ACK;
 	}
+	
+	/*Perform a v operation on device semaphore*/
 	pcb_PTR p;
 	deviceSema4s[devIndex]++;
 	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
 		if(p != NULL) {
+			/*Decrement softBlockCount if process was removed from waiting list, store status code in p's v0*/
 			softBlockCount--;	
 			p->p_s.s_v0 = statusCode;
 			insertProcQ(&readyQ, p);
 		}
 	}
 	
+	/*No process to return to, call scheduler*/
 	if(currentProc == NULL) {
-		debugD(5);
 		scheduler();
 	}
+	/*Copy state then load state*/
 	stateCopy(exceptionState,&(currentProc->p_s));
 	switchState(&(currentProc->p_s));
 }
 
 
  
-
+/*Process local timer interrupt handler, handles interrupt every time slice*/
 void pltInterrupt() {
-
+	/*Stores current time of day to track interval*/
 	int stopTod;
 	STCK(stopTod);
 	
 	if(currentProc != NULL) {
+		/*Stores accumulated time into currentProc and inserts it onto ready queue*/
 		stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
 		currentProc->p_time += (stopTod - startTod);
 		insertProcQ(&readyQ, currentProc);
 		currentProc = NULL;
 	}
+	
+	/*Start new interval, ACK interrupt, call scheduler*/
 	STCK(startTod);
 	setTIMER(TIMESLICE);
 	scheduler();
 }
 
+/*Interval timer interrupt handler, occurs every ITSECOND*/
 void itInterrupt()
 {
+	/*ACK interrupt by loading ITSECOND into interval timer*/
 	LDIT(ITSECOND);
+	
+	/*Remove all processes waiting on clock*/
 	pcb_PTR p = removeBlocked(&clockSem);
 	while(p != NULL) {
 		insertProcQ(&readyQ, p);
 		softBlockCount--;
 		p = removeBlocked(&clockSem);
 	}
+	
+	/*Reset clock semaphore to 0*/
 	clockSem = 0;
+	
+	/*No process to return to, call scheduler*/
 	if(currentProc == NULL) {
 		scheduler();
 	}
+	
+	/*Copy state, insert current process to ready queue, and call scheduler*/
 	stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
 	insertProcQ(&readyQ, currentProc);
 	scheduler();
