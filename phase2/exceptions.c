@@ -10,29 +10,32 @@
 #include "../h/interrupts.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+/*Sys 1, creates thread*/
 void createProcess();
+/*Sys 2, recursively terminates calling process and its progeny*/
 void terminateProcess(pcb_PTR current);
+/*Standard p operation*/
 void passeren();
+/*Standard v operation*/
 void verhogen();
+/*Sets calling process to wait for specified I/O*/
 void waitForDevice();
+/*Sets calling process to wait for pseudoclock*/
 void waitForClock();
+/*Performs pass up or die with PGFAULTEXCEPT*/
 void tlbRefillHandler();
+/*Performs pass up or die with GENERALEXCEPT*/
 void programTrapHandler();
-
-void debugC(int a, int b) {
-	int i = 0;
-	i--;
-}
 
 /*Single parameter method to handle syscalls*/
 void syscallHandler(int syscallCode)
 {
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	
-	/*Checks current state of program, to see if currently in user mode*/
+	/*Checks KUP to see if process is in user mode*/
 	if(oldState->s_status & KUPON)
 	{
-		/*Attempted a syscall in user mode, triggger a program trap*/
+		/*Attempted a syscall in user mode, trigger a program trap*/
 		programTrapHandler();
 	}
 	
@@ -54,26 +57,24 @@ void syscallHandler(int syscallCode)
 		/*SYS3 Passaren*/
 		case PASSEREN: {
 			/*Perform a P operation on a semaphore*/
-			/*NOTE TO SELF: write a better comment*/
 			passeren(); 
 			break;}
 			
 		/*SYS4 Verhogen*/	
 		case VERHOGEN: {
 			/*Perform a V operation on a semaphore*/
-			/*NOTE TO SELF: write a better comment*/
 			verhogen(); 
 			break;}
 			
 		/*SYS5 Wait for IO*/
 		case WAITFORIO: {
 			/*Waits for input or output from a device*/
-			/*NOTE TO SELF: check what this function does, write better comment*/
 			waitForDevice(); 
 			break;}
 			
 		/*SYS6 Get CPU Time*/
 		case GETCPUT: {
+			/*Stores accumulated CPU time in v0 and performs load state*/
 			oldState->s_v0 = (currentProc->p_time);
 			oldState->s_pc += WORDLEN;
 			stateCopy(oldState, &(currentProc->p_s));
@@ -89,6 +90,7 @@ void syscallHandler(int syscallCode)
 			
 		/*SYS8 Get Support Data*/
 		case GETSUPPORTT: {
+			/*Stores pointer to support structure in v0 and performs load state*/
 			oldState->s_v0 = (currentProc->p_supportStruct);
 			oldState->s_pc += WORDLEN;
 			stateCopy(oldState, &(currentProc->p_s));
@@ -101,9 +103,11 @@ void syscallHandler(int syscallCode)
 			/*Pass up or Die*/
 			passUpOrDie(GENERALEXCEPT); }
 	}
+	/*Return to current process*/
 	if(currentProc != NULL) {
 		switchState(&(currentProc->p_s));
 	}
+	/*No process to return to, call scheduler*/
 	else{
 		scheduler();
 	}
@@ -113,115 +117,141 @@ void syscallHandler(int syscallCode)
 
 /*Creates a new process for use*/
 void createProcess() {
-
+	
 	state_PTR exceptState = (state_PTR)EXCEPTSTATEADDR;
+	
+	/*Allocate new pcb*/
 	pcb_PTR newProc = allocPcb();
+	/*Automatically store ERRORCODE in result in case newProc is null*/
 	int result = ERRORCODE;
+	
+	
 	if(newProc != NULL) {
+		/*Increment process count and initialize state of new process*/
 		processCount++;
 		state_PTR newState = (state_PTR)(exceptState->s_a1);
 		stateCopy(newState, &(newProc->p_s));
 		newProc->p_supportStruct = exceptState->s_a2;
 		newProc->p_time = 0;
 		newProc->p_semAdd = NULL;
+		/*Makes new process child of current process*/
 		insertChild(currentProc, newProc);
+		/*Adds new process to the ready queue and stores SUCCESS into result*/
 		insertProcQ(&readyQ, newProc);
 		result = SUCCESS;
 	}
+	/*Stores result in v0 and increments pc to prevent syscall loop*/
 	exceptState->s_v0 = result;
 	exceptState->s_pc += WORDLEN;
+	/*No process to return to, call scheduler*/
 	if(currentProc == NULL) {
 		scheduler();
 	}
-	stateCopy(exceptState, &(currentProc->p_s));
 	
+	/*Copy state into current process, load state*/
+	stateCopy(exceptState, &(currentProc->p_s));
 	switchState(&(currentProc->p_s));
 }
 
 /*Terminate the current process, and all of its children*/
 void terminateProcess(pcb_PTR current) {
 	/*Checks if the current node has a child*/
-	
 	while(emptyChild(current) == FALSE) 
 	{
-		/*Recurses, using the current node's child as a parameter input*/
+		/*Recursively calls terminate process on each child until current has no children*/
 		terminateProcess(removeChild(current));
 		
 	}
 	
+	/*If current is on the ASL*/
 	if((current->p_semAdd) != NULL) {
-	
+		/*Current is waiting on I/O*/
 		if((current->p_semAdd >= &deviceSema4s[0]) && (current->p_semAdd <= &clockSem))
 		{
 			softBlockCount--;
 		}
+		/*Current is blocked*/
 		else {
 			int *sem = current->p_semAdd;
 			(*sem) += 1;
 		}
+		/*Removes current from waiting list*/
 		pcb_PTR p = outBlocked(current);
+		/*Decrement process count if p is not null*/
 		if(p != NULL) {
 			processCount--;
 		}
 		
 	}
+	/*Current is on the ready queue*/
 	else {
+		/*Remove from queue and decrement process count*/
 		pcb_PTR p = outProcQ(&readyQ, current);
 		if(p != NULL) {
 			processCount--;
 		}
 		
 	}
+	/*moving p != NULL check here does not work*/
 	
+	/*Current is the current process*/
 	if(current == currentProc) {
-		debugC(14,15);
+		/*Orphan current, decrement process count, and call scheduler*/
 		if(!emptyChild(current)) {outChild(currentProc);}
 		currentProc = NULL;
 		processCount--;
 		scheduler();
 	}
 	
+	/*Deallocate current*/
 	freePcb(current);
 }
 
 /*Performs a P operation on a semaphore*/
-/*NOTE TO SELF: really need to figure out what this means*/
 void passeren() {
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	
+	/*Dereference and decrement semaphore*/
 	int *sem = oldState->s_a1;
 	(*sem)--;
 	
+	/*Increment pc in case process doesn't block*/
 	oldState->s_pc+= WORDLEN;
 	stateCopy(oldState, &(currentProc->p_s));
 	if( (*sem) < 0) {
+		/*Process blocks, insert onto asl*/
 		insertBlocked(oldState->s_a1, currentProc);
 		
 		currentProc = mkEmptyProcQ();
 		scheduler();
 	}
+	/*load state*/
 	switchState(&(currentProc->p_s));
 	
 }
 
 /*Performs a V operation on a semaphore*/
-/*NOTE TO SELF: find out what this means*/
 void verhogen() {
-	
-	
+		
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	
+	/*Dereference and increment semaphore*/
 	int *sem = oldState->s_a1;
 	(*sem)++;
+	
 	pcb_PTR p;
 	if((*sem) <= 0) {
+		/*Signal a waiting process based on semaphore*/
 		p = removeBlocked(sem);
 		if(p != NULL) {
 			insertProcQ(&readyQ, p);
 		}
 	}
+	/*Store semaphore in v0 and increment pc*/
 	oldState->s_v0 = sem;
 	oldState->s_pc+= WORDLEN;
 	
+	/*Copy state then load state*/
 	stateCopy(oldState, &(currentProc->p_s));
 	switchState(&(currentProc->p_s));
 }
@@ -255,19 +285,23 @@ void waitForDevice() {
 
 /*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
 void waitForClock() {
+	/*Store accumulated time in calling process*/
 	int stopTod;
 	STCK(stopTod);
 	currentProc->p_time += (stopTod - startTod);
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
+	/*Decrement clockSem*/
 	clockSem--;
 	
 	if(clockSem < 0) {
+		/*Insert process onto asl, waiting on pseudoclock*/
 		softBlockCount++;
 		oldState->s_pc += WORDLEN;
 		stateCopy(oldState, &(currentProc->p_s));
 		insertBlocked(&clockSem, currentProc);
 		currentProc = NULL;
 	}
+	/*Start new interval and call scheduler*/
 	STCK(startTod);
 	scheduler();
 }
@@ -277,7 +311,7 @@ void passUpOrDie(unsigned int passUpCase)
 {
 	/*Support_t is not NULL*/
 	if((currentProc->p_supportStruct) != NULL) {
-		/*Pass Up*/
+		/*Stores context and passes up to next level*/
 		state_PTR exceptStatePtr = (state_PTR) EXCEPTSTATEADDR;
 		stateCopy(exceptStatePtr, &(currentProc->p_supportStruct->sup_exceptState[passUpCase]));
 		int newPc = currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_pc;
@@ -286,7 +320,7 @@ void passUpOrDie(unsigned int passUpCase)
 		LDCXT(currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_stackPtr, currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_status, currentProc->p_supportStruct->sup_exceptContext[passUpCase].c_pc);
 	}
 	else {/*Die*/
-		/*Terminate the current process*/
+		/*Terminate the current process then call scheduler*/
 		terminateProcess(currentProc); 
 		scheduler();}
 }
