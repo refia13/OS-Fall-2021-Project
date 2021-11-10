@@ -413,7 +413,7 @@ void p4() {
 	}
 
 	SYSCALL(VERHOGEN, (int)&synp4, 0, 0);				/* V(synp4)     */
-
+	debugE(99);
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);				/* P(blkp4)     */
 
 	SYSCALL(PASSERN, (int)&synp4, 0, 0);				/* P(synp4)     */

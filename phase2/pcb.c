@@ -157,13 +157,13 @@ void insertChild(pcb_PTR prnt, pcb_PTR p) {
 
 pcb_PTR removeChild(pcb_PTR p) {
 	/* Make the first child of the pcb pointed to by p no longer a child of p. Return NULL if initially there were no children of p. Otherwise, return a pointer to this removed first child pcb*/
-	if (emptyChild(p)) {
+	if(p->p_child == NULL) {
 		return NULL;
 	}
-	/*Shift tree and remove child*/
 	pcb_PTR child = p->p_child;
-	p->p_child = child->p_next_sib;
-	p->p_child->p_prev_sib = NULL;
+	
+	p->p_child = p->p_child->p_next_sib;
+	debugG(p->p_child);
 	return child;
 }
 

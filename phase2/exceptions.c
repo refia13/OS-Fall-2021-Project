@@ -19,7 +19,7 @@ void waitForClock();
 void tlbRefillHandler();
 void programTrapHandler();
 
-void debugC(int a) {
+void debugC(int a, int b) {
 	int i = 0;
 	i--;
 }
@@ -141,40 +141,43 @@ void createProcess() {
 /*Terminate the current process, and all of its children*/
 void terminateProcess(pcb_PTR current) {
 	/*Checks if the current node has a child*/
-	while(!emptyChild(current)) 
+	
+	while(emptyChild(current) == FALSE) 
 	{
 		/*Recurses, using the current node's child as a parameter input*/
-		pcb_PTR next = removeChild(current);
-		terminateProcess(next);
-		processCount--;
+		terminateProcess(removeChild(current));
 		
 	}
 	
-	
-	debugC(current->p_semAdd);
 	if((current->p_semAdd) != NULL) {
-		debugC(current->p_semAdd);
+	
 		if((current->p_semAdd >= &deviceSema4s[0]) && (current->p_semAdd <= &clockSem))
 		{
 			softBlockCount--;
 		}
 		else {
 			int *sem = current->p_semAdd;
-			debugC((*sem));
 			(*sem) += 1;
 		}
 		pcb_PTR p = outBlocked(current);
+		if(p != NULL) {
+			processCount--;
+		}
 		
 	}
 	else {
 		pcb_PTR p = outProcQ(&readyQ, current);
+		if(p != NULL) {
+			processCount--;
+		}
 		
 	}
 	
 	if(current == currentProc) {
-		outChild(currentProc);
+		debugC(14,15);
+		if(!emptyChild(current)) {outChild(currentProc);}
+		currentProc = NULL;
 		processCount--;
-		freePcb(currentProc);
 		scheduler();
 	}
 	
@@ -192,9 +195,9 @@ void passeren() {
 	oldState->s_pc+= WORDLEN;
 	stateCopy(oldState, &(currentProc->p_s));
 	if( (*sem) < 0) {
-		currentProc->p_semAdd = sem;
-		insertBlocked(sem, currentProc);
-		currentProc = NULL;
+		insertBlocked(oldState->s_a1, currentProc);
+		
+		currentProc = mkEmptyProcQ();
 		scheduler();
 	}
 	switchState(&(currentProc->p_s));
@@ -284,7 +287,8 @@ void passUpOrDie(unsigned int passUpCase)
 	}
 	else {/*Die*/
 		/*Terminate the current process*/
-		terminateProcess(currentProc); }
+		terminateProcess(currentProc); 
+		scheduler();}
 }
 /*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value GENERALEXCEPT*/
 void programTrapHandler() {

@@ -22,6 +22,7 @@ void debugB(int a, int b, int c) {
 /*Program for the scheduler, assigns time to processes and begins their execution*/
 void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/
+	
 	if(!emptyProcQ(readyQ)) {
 		debugB(7,8,9);
 		currentProc = removeProcQ(&readyQ);
