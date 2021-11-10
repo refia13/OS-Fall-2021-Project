@@ -8,54 +8,43 @@
 #include "../h/scheduler.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-extern void setTimer();
+/*External function provided by umps*/
 extern unsigned int setTIMER(unsigned int t);
+/*Debug function, calls load state on given state pointer*/
 extern void switchState(state_PTR s);
+/*Copies source state pointer into sink's state pointer*/
 void stateCopy(state_PTR source, state_PTR sink);
 
-
-void debugB(int a, int b, int c) {
-	int i = 0;
-	i++;
-}
 
 /*Program for the scheduler, assigns time to processes and begins their execution*/
 void scheduler() {
 	/*Removes a process from the ready queue to become the current process*/
-	
 	if(!emptyProcQ(readyQ)) {
-		debugB(7,8,9);
+		/*Initializes the state of the current process*/
 		currentProc = removeProcQ(&readyQ);
-		debugB(4,5,6);
 		setTIMER(TIMESLICE);
 		STCK(startTod);
 		switchState(&currentProc->p_s);
 	}
-	/*Initializes the state of the current process*/
 	else {
 	/*If there are no more processes*/
-	if(processCount == 0)
-	{
-		/*Stop the program*/
-		HALT();
-	}
-	/*If there are any blocked processes*/
-	else if(softBlockCount > 0)
-	{
-		state_PTR state = (state_PTR)EXCEPTSTATEADDR;
-		/*state->s_status = ALLOFF | IECON | IMON;*/
-		setSTATUS(ALLOFF | IECON | IMON);
-		/*Twiddle Thumbs until device interrupt*/
-		
-		WAIT();
-	}
-	/*Deadlocked - Process count > 0 and blocked count = 0*/
-	else if(processCount > 0 && softBlockCount <= 0)
-	{
-		/*Panic to deal with deadlock*/
-		debugB(3,2,1);
-		PANIC();
-	}
+		if(processCount == 0){
+			/*Stop the program*/
+			HALT();
+		}
+		/*If there are any blocked processes*/
+		else if(softBlockCount > 0){
+			state_PTR state = (state_PTR)EXCEPTSTATEADDR;
+			/*state->s_status = ALLOFF | IECON | IMON;*/
+			setSTATUS(ALLOFF | IECON | IMON);
+			/*Twiddle Thumbs until device interrupt*/
+			WAIT();
+		}
+		/*Deadlocked - Process count > 0 and blocked count = 0*/
+		else if(processCount > 0 && softBlockCount <= 0){
+			/*Panic to deal with deadlock*/
+			PANIC();
+		}
 	}
 }
 
