@@ -62,30 +62,30 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	int devNoMap = devRegA->interrupt_dev[lineNo-3];
 	
 	if(devNoMap & DEV0) {
-		devNo = 0; }
+		devNo = PROCESSOR; }
 	else if(devNoMap & DEV1) {
-		devNo = 1; }
+		devNo = PLTIMER; }
 	else if(devNoMap & DEV2) {
-		devNo = 2; }
+		devNo = INTERVALTIMER; }
 	else if(devNoMap & DEV3) {
-		devNo = 3; }
+		devNo = DISK; }
 	else if(devNoMap & DEV4) {
-		devNo = 4; }
+		devNo = FLASH; }
 	else if(devNoMap & DEV5) {
-		devNo = 5; }
+		devNo = NETWORK; }
 	else if(devNoMap & DEV6) {
-		devNo = 6; }
+		devNo = PRINTER; }
 	else if(devNoMap & DEV7) {
-		devNo = 7; }
+		devNo = TERMINAL; }
 
 	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
 	
 	/*Compute index of device semaphore and device register*/
-	int devIndex = ((lineNo - 3) * 8) + (devNo);
+	int devIndex = ((lineNo - NONPERIPHERALDEV) * DEVPERLINE) + (devNo);
 	int statusCode;
 	
 	/*Special case device is a terminal*/
-	if(lineNo == 7)
+	if(lineNo == TERMINAL)
 	{
 		statusCode = devRegA->devreg[devIndex].t_transm_status & 0xFF;
 		if(statusCode != READY) {
@@ -111,7 +111,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	deviceSema4s[devIndex]++;
 	if(deviceSema4s[devIndex] <= 0) {
 		p = removeBlocked(&(deviceSema4s[devIndex]));
-		if(p != NULL) {
+		if(p != mkEmptyProcQ()) {
 			/*Decrement softBlockCount if process was removed from waiting list, store status code in p's v0*/
 			softBlockCount--;	
 			p->p_s.s_v0 = statusCode;
@@ -120,7 +120,7 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
 	}
 	
 	/*No process to return to, call scheduler*/
-	if(currentProc == NULL) {
+	if(currentProc == mkEmptyProcQ()) {
 		scheduler();
 	}
 	/*Copy state then load state*/
@@ -136,12 +136,12 @@ void pltInterrupt() {
 	int stopTod;
 	STCK(stopTod);
 	
-	if(currentProc != NULL) {
+	if(currentProc != mkEmptyProcQ()) {
 		/*Stores accumulated time into currentProc and inserts it onto ready queue*/
 		stateCopy((state_PTR)EXCEPTSTATEADDR, &(currentProc->p_s));
 		currentProc->p_time += (stopTod - startTod);
 		insertProcQ(&readyQ, currentProc);
-		currentProc = NULL;
+		currentProc = mkEmptyProcQ();
 	}
 	
 	/*Start new interval, ACK interrupt, call scheduler*/
@@ -158,7 +158,7 @@ void itInterrupt()
 	
 	/*Remove all processes waiting on clock*/
 	pcb_PTR p = removeBlocked(&clockSem);
-	while(p != NULL) {
+	while(p != mkEmptyProcQ()) {
 		insertProcQ(&readyQ, p);
 		softBlockCount--;
 		p = removeBlocked(&clockSem);
@@ -168,7 +168,7 @@ void itInterrupt()
 	clockSem = 0;
 	
 	/*No process to return to, call scheduler*/
-	if(currentProc == NULL) {
+	if(currentProc == mkEmptyProcQ()) {
 		scheduler();
 	}
 	

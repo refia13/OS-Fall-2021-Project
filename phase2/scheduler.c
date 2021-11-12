@@ -34,8 +34,7 @@ void scheduler() {
 		}
 		/*If there are any blocked processes*/
 		else if(softBlockCount > 0){
-			state_PTR state = (state_PTR)EXCEPTSTATEADDR;
-			/*state->s_status = ALLOFF | IECON | IMON;*/
+			/*sets the status to have interrupts on, and turns on the interrupt mask. Ensures that the next interrupt will be a device by keeping TEBit off*/
 			setSTATUS(ALLOFF | IECON | IMON);
 			/*Twiddle Thumbs until device interrupt*/
 			WAIT();
@@ -59,7 +58,6 @@ void stateCopy(state_PTR source, state_PTR sink) {
 		
 		sink->s_cause = source->s_cause;
 		sink->s_entryHI = source->s_entryHI;
-		
 		sink->s_pc = source->s_pc;
 		sink->s_status = source->s_status;
 		int i;

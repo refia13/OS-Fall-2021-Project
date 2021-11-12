@@ -144,7 +144,7 @@ void createProcess() {
 	exceptState->s_v0 = result;
 	exceptState->s_pc += WORDLEN;
 	/*No process to return to, call scheduler*/
-	if(currentProc == NULL) {
+	if(currentProc == mkEmptyProcQ()) {
 		scheduler();
 	}
 	
@@ -162,7 +162,6 @@ void terminateProcess(pcb_PTR current) {
 		terminateProcess(removeChild(current));
 		
 	}
-	
 	/*If current is on the ASL*/
 	if((current->p_semAdd) != NULL) {
 		/*Current is waiting on I/O*/
@@ -176,29 +175,34 @@ void terminateProcess(pcb_PTR current) {
 			(*sem) += 1;
 		}
 		/*Removes current from waiting list*/
+		/*Decrement process count if p is not null, must be done per case to prevent process count from being decremented too much*/
 		pcb_PTR p = outBlocked(current);
-		/*Decrement process count if p is not null*/
-		if(p != NULL) {
+		if(p != mkEmptyProcQ()) {
 			processCount--;
 		}
+		
 		
 	}
 	/*Current is on the ready queue*/
 	else {
-		/*Remove from queue and decrement process count*/
+		/*Remove from queue*/
 		pcb_PTR p = outProcQ(&readyQ, current);
-		if(p != NULL) {
+		/*Decrement process count if p is not null, must be done per case to prevent process count from being decremented too much*/
+		if(p != mkEmptyProcQ()) {
 			processCount--;
 		}
 		
+		
 	}
-	/*moving p != NULL check here does not work*/
+	
+	
+	
 	
 	/*Current is the current process*/
 	if(current == currentProc) {
 		/*Orphan current, decrement process count, and call scheduler*/
 		if(!emptyChild(current)) {outChild(currentProc);}
-		currentProc = NULL;
+		currentProc = mkEmptyProcQ();
 		processCount--;
 		scheduler();
 	}
@@ -243,7 +247,7 @@ void verhogen() {
 	if((*sem) <= 0) {
 		/*Signal a waiting process based on semaphore*/
 		p = removeBlocked(sem);
-		if(p != NULL) {
+		if(p != mkEmptyProcQ()) {
 			insertProcQ(&readyQ, p);
 		}
 	}
@@ -258,26 +262,29 @@ void verhogen() {
 
 /*Waits for input or output from a device*/
 void waitForDevice() {
-
+	
+	/*Stop the current interval by storing the current TOD into stopTod*/
 	int stopTod;
 	STCK(stopTod);
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	int lineNo = oldState->s_a1;
 	int devNo = oldState->s_a2;
 	int waitForTermRead = oldState->s_a3;
+	/*Compute the device semaphore index based on the given line number, device number, and whether read/write was specified*/
 	int devSemIndex = (lineNo-3)*8 + devNo;
 	if(waitForTermRead == TRUE) {
 		devSemIndex += 8;
 	}
+	/*Decrement device semaphore*/
 	deviceSema4s[devSemIndex]--;
 	if(deviceSema4s[devSemIndex] < 0) {
-		
+		/*Since the device semaphore is a synchronization semaphore, this will always block*/
 		oldState->s_pc += WORDLEN;
 		stateCopy(oldState, &(currentProc->p_s));
 		currentProc->p_time += (stopTod - startTod);
 		insertBlocked(&(deviceSema4s[devSemIndex]), currentProc);
-		
-		currentProc = NULL;
+		/*Sets currentProc to null after inserting it onto the waiting list and calls the scheduler, incrementing soft block count*/
+		currentProc = mkEmptyProcQ();
 		softBlockCount++;
 		scheduler();
 	}

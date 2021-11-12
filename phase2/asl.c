@@ -8,9 +8,7 @@ static semd_PTR semdFree_h = NULL; /*ASL Free List*/
 static semd_PTR semd_h; /*ASL Active List*/
 
 
-debugH(int a) {
-	return a;
-}
+
 
 semd_PTR semdAlloc(int *semAdd) { /*Helper method that allocates a semaphore descriptor from free list. Returns a pointer to the semaphore descriptor with its values initialized
 				    Or in the case where the free list is empty or its pointer has defaulted to the default zero value, returns NULL*/

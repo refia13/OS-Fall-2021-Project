@@ -3,10 +3,7 @@
 #include "../h/pcb.h"
 
 static pcb_PTR pcbList_h; /*Stack of PCBs*/
-void debugG(int a) {
-	int i = 0;
-	i++;
-}
+
 void freePcb(pcb_PTR p) {
 	/*Insert the element pointed to by p onto the pcbFree list. */
 	insertProcQ(&pcbList_h, p);
@@ -163,7 +160,6 @@ pcb_PTR removeChild(pcb_PTR p) {
 	pcb_PTR child = p->p_child;
 	
 	p->p_child = p->p_child->p_next_sib;
-	debugG(p->p_child);
 	return child;
 }
 

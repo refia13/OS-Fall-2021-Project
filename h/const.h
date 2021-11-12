@@ -71,10 +71,10 @@
 #define RAMSTART        	0x20000000
 #define BIOSDATAPAGE    	0x0FFFF000
 #define PASSUPVECTOR	 	0x0FFFF900
+#define STACKADDRESS 	0x20001000
+#define EXCEPTSTATEADDR 	0x0FFFF000
+#define BUSADDRESS 	0x10000000
 
-/* Exceptions related constants */
-#define	PGFAULTEXCEPT	  	0
-#define GENERALEXCEPT	  	1
 
 /* Pcb Constants */
 #define MAXPROC		20
@@ -111,6 +111,7 @@
 #define TERMINTERRUPT 	0x00008000
 
 /*LineNo Constants*/
+#define PROCESSOR 0
 #define INTERVALTIMER 1
 #define PLTIMER 2
 #define DISK 3
@@ -131,16 +132,11 @@
 
 /*Exception related Constants*/
 #define PGFAULTEXCEPT 	0
-#define GENERALEXEPT 	1
+#define GENERALEXCEPT 	1
 #define SYSCALLEXCEPT 	8
 #define IOEXCEPT 	0
 #define TLBREFILLEXCEPT 3
 
-
-/*Memory Constants*/
-#define STACKADDRESS 	0x20001000
-#define EXCEPTSTATEADDR 	0x0FFFF000
-#define BUSADDRESS 	0x10000000
 
 /*SYSCALL CODES*/
 #define CREATEPROCESS 	1
@@ -157,5 +153,7 @@
 #define SEMCOUNT 	49
 #define ERRORCODE -1
 #define SUCCESS 0
+#define NONPERIPHERALDEV 3
+#define DEVPERLINE 8
 
 #endif
