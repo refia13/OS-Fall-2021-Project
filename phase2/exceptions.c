@@ -33,7 +33,7 @@ void syscallHandler(int syscallCode)
 	state_PTR oldState = (state_PTR)EXCEPTSTATEADDR;
 	
 	/*Checks KUP to see if process is in user mode*/
-	if(oldState->s_status & KUPON)
+	if(oldState->s_status & KUPON && syscallCode <= 8)
 	{
 		/*Attempted a syscall in user mode, trigger a program trap*/
 		programTrapHandler();
