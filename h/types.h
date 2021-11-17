@@ -78,6 +78,9 @@ typedef struct support_t {
 	int sup_asid;
 	state_t sup_exceptState[2];
 	context_t sup_exceptContext[2];
+	unsigned int sup_privatePgTbl[32];
+	int sup_stackTLB[500];
+	int sup_stackGen[500];
 
 } support_t;
 

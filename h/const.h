@@ -156,4 +156,9 @@
 #define NONPERIPHERALDEV 3
 #define DEVPERLINE 8
 
+/*Support Level Constants*/
+#define UPROCMAX 1
+#define POOLSIZE 32
+#define PGMAX 32
+
 #endif
