@@ -160,5 +160,11 @@
 #define UPROCMAX 1
 #define POOLSIZE 32
 #define PGMAX 32
+#define STARTPGNO 0x80000000
+#define DRON 0x00000400
+#define PRINTCHR	2
+#define BYTELEN	8
+#define RECVD	5
+#define TERMSTATMASK	0xFF
 
 #endif

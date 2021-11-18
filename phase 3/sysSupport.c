@@ -1,6 +1,7 @@
 /*This is the start of the sysSupport module for phase 3.*/
 /*This module implements the support level general exception handler, the support level SYSCALL exception handler, and the support level Program Trap exception handler*/
-
+static int term_mut = 1;
+static int print_mut = 1;
 
 void supGenExceptionHandler() {
 	support_t *sup = SYSCALL (GETSUPPORTT, 0, 0, 0);
@@ -24,13 +25,13 @@ void supSyscallHandler(state_PTR exceptState) {
 			retValue = (int) getTod();
 		}
 		case(PRNTRW) {
-			retValue = writePrinter();
+			retValue = writePrinter(exceptState);
 		}
 		case(TERMW) {
-			retValue = writeTerminal();
+			retValue = writeTerminal(exceptState);
 		}
 		case(TERMR) {
-			retValue = readTerminal();
+			retValue = readTerminal(exceptState);
 		}
 		default {
 			programTrapHandler(exceptState);
@@ -60,14 +61,53 @@ unsigned int getTod() {
 	return currentTod;
 }
 
-int writePrinter() {
-
-}
-
-int writeTerminal() {
-
-}
-
-int readTerminal() {
+int writePrinter(state_PTR exceptionState) {
+	char *s = msg;
+	devregtr * base = (devregtr *) (TERM0ADDR);
+	devregtr status;
 	
+	SYSCALL(PASSERN, (int)&print_mut, 0, 0);				/* P(term_mut) */
+	while (*s != EOS) {
+		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		status = SYSCALL(WAITIO, PRINTER, 0, 0);	
+		if ((status & TERMSTATMASK) != RECVD)
+			/*Store error code*/
+		s++;	
+	}
+	SYSCALL(VERHOGEN, (int)&print_mut, 0, 0);
+	return status;
+}
+
+int writeTerminal(state_PTR exceptionState) {
+	char *s = msg;
+	devregtr * base = (devregtr *) (TERM0ADDR);
+	devregtr status;
+	
+	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
+	while (*s != EOS) {
+		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		status = SYSCALL(WAITIO, TERMINAL, 0, 0);	
+		if ((status & TERMSTATMASK) != RECVD)
+			/*Store error code*/
+		s++;	
+	}
+	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);
+	return status;
+}
+
+int readTerminal(state_PTR exceptionState) {
+	char *s = msg;
+	devregtr * base = (devregtr *) (TERM0ADDR);
+	devregtr status;
+	
+	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
+	while (*s != EOS) {
+		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		status = SYSCALL(WAITIO, TERMINAL, 1, 0);	
+		if ((status & TERMSTATMASK) != RECVD)
+			/*Store error code*/
+		s++;	
+	}
+	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);
+	return status;
 }

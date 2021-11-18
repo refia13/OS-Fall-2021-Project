@@ -48,6 +48,13 @@ void tlbExceptionHandler() {
 	LDST(&(procsup->sup_exceptionState[0]));
 }
 
+void uTLB_RefillHandler() {
+	support_t *sup = SYSCALL(GETSUPPORTT,0,0,0);
+	int exEntryHI = sup->sup_exceptState[PGFAULTEXCEPT].s_entryHI;
+	int missingPageNo = (exEntryHI & PAGEMASK) >> VPNMASK;
+	
+}
+
 int pickVictim() {
 	i = (i+1) % POOLSIZE;
 	return i;

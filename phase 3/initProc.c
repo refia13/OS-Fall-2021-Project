@@ -19,8 +19,9 @@ void test() {
 		support_t *uSupport;
 		uSupport->sup_asid = i;
 		int j;
-		for(j = 0; j < PGMAX; j++) {
+		for(j = 0; j < PGMAX-1; j++) {
 			/*Initialize page table*/
+			uSupport->sup_privatePgTbl[j] = (STARTPGNO + j) | (STARTASID + i) | (DRON);
 		}
 		int sSP = uSupport->sup_stackGen[499];
 		int sStatus = ALLOFF | IECON | IEPON | IMON | TEON;
