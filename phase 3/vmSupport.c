@@ -49,9 +49,17 @@ void tlbExceptionHandler() {
 }
 
 void uTLB_RefillHandler() {
-	support_t *sup = SYSCALL(GETSUPPORTT,0,0,0);
-	int exEntryHI = sup->sup_exceptState[PGFAULTEXCEPT].s_entryHI;
-	int missingPageNo = (exEntryHI & PAGEMASK) >> VPNMASK;
+	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
+	support_t *currSupp = SYSCALL (GETSUPPORTT,0,0,0);
+	/*determine page number*/
+	int pageNo = exceptionState->s_entryHI & VPNMASK;
+	unsigned int pageEntry = currSupp->sup_privatePgTbl[[pageNo - STARTPGNO];
+	/*Write the page table entry into the tlb*/
+	setENTRYHI(pageEntry & ENTRYHIMASK);
+	setENTRYLO(pageEntry & ENTRYLOMASK);
+	TLBWR();
+	/*return control to the currentProc*/
+	LDST(exceptionState);
 	
 }
 
