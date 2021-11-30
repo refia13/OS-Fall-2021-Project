@@ -14,6 +14,10 @@ typedef signed int cpu_t;
 
 typedef unsigned int memaddr;
 
+typedef struct pgte_t {
+	unsigned int entryHI;
+	unsigned int entryLO;
+}
 
 /* Device Register */
 typedef struct {
@@ -78,7 +82,7 @@ typedef struct support_t {
 	int sup_asid;
 	state_t sup_exceptState[2];
 	context_t sup_exceptContext[2];
-	unsigned int sup_privatePgTbl[32];
+	pge_t sup_privatePgTbl[32];
 	int sup_stackTLB[500];
 	int sup_stackGen[500];
 

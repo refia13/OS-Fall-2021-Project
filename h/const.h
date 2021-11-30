@@ -166,5 +166,7 @@
 #define BYTELEN	8
 #define RECVD	5
 #define TERMSTATMASK	0xFF
+#define ENTRYHISHIFT 5
+#define DIRTYON 0x00000400
 
 #endif
