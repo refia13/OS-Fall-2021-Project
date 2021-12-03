@@ -14,8 +14,10 @@ int pickVictim();
 static int swapSem = 1;
 int flashIO(int readFlash, int asid); /*Helper method for flash IO, takes a parameter to determine whether to read or write*/
 swap_t swapPool[PGMAX];
+
 /*Page Fault Handler*/
-/*Implements the Pager*/
+/*Implements the Pager, uses round robin algorithm to select frames*/ 
+/*if frame is already in use when chosen, writes to flash memory*/
 void tlbExceptionHandler() {
 	support_t *procsup = SYSCALL (GETSUPPORTT,0,0,0);
 	int cause = (procsup->sup_exceptState[0].s_cause & EXMASK) >>2;
@@ -59,6 +61,7 @@ void tlbExceptionHandler() {
 	LDST(&(procsup->sup_exceptState[PGFAULTEXCEPT]));
 }
 
+/*uTLB refill handler, updates tlb with missing page table entry*/
 void uTLB_RefillHandler() {
 
 	state_PTR exceptionState = (state_PTR) EXCEPTSTATEADDR;
@@ -75,11 +78,13 @@ void uTLB_RefillHandler() {
 	
 }
 
+/*Helper method for round robin frame selection algorithm*/
 int pickVictim() {
 	i = (i+1) % POOLSIZE;
 	return i;
 }
 
+/*Flash memory io handler, chooses to read or write based on value in readFlash*/
 int flashIO(int readFlash, int asid) {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
