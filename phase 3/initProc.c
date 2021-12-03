@@ -8,7 +8,7 @@
 #include "/usr/include/umps3/umps/libumps.h"
 int procSem;
 int devMutex[SEMCOUNT];
-/*test function, instantiates the processes for phase 3*/
+/*test function, initializes up to UPROCMAX (1-8) processes*/
 void test() {
 	/*Initialize the Phase 3 data structures*/
 	/*Initialize and launch the processes*/
@@ -48,6 +48,7 @@ void test() {
 		}	
 		
 	}
+	/*All processes have finished, terminate*/
 	SYSCALL (TERMPROCESS, 0, 0, 0);
 }
 
