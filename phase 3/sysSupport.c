@@ -7,6 +7,8 @@
 #include "../h/sysSupport.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+/*Support level general exception handler, covers all non-tlb exceptions in phase 3*/
+/*Either passes to syscall handler or program trap handler, based on cause*/
 void supGenExceptionHandler() {
 	support_t *sup = SYSCALL (GETSUPPORTT, 0, 0, 0);
 	int cause = sup->sup_exceptState[1].s_cause & EXMASK;
@@ -18,6 +20,7 @@ void supGenExceptionHandler() {
 	}
 }
 
+/*Support level syscall handler, defines sys 9-13*/
 void supSyscallHandler(state_PTR exceptState) {
 	int sysCode = exceptState->s_a0;
 	int retValue;
@@ -50,25 +53,29 @@ void supSyscallHandler(state_PTR exceptState) {
 	LDST(exceptState);
 }
 
+/*Terminates calling process and releases mutex if held*/
 void programTrapHandler(state_PTR exceptState) {
 	/*Check if holding mutex on something*/
 	
 	/*terminate*/
 	SYSCALL (TERMPROCESS,0,0,0);
 }
+
 /*User mode wrapper for the kernal mode exclusive SYS2*/
 void terminateUProc()
 {
-	
 	SYSCALL (TERMPROCESS, 0, 0, 0);
 }
 
+/*Returns current time of day*/
 unsigned int getTod() {
 	int currentTod;
 	STCK(currentTod);
 	return currentTod;
 }
 
+/*Sys 11, writes a string to a printer, printer is selected based on process id*/
+/*Returns status code upon completion*/
 int writePrinter() {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
@@ -110,6 +117,7 @@ int writePrinter() {
 	
 }
 
+/*Sys 12, writes value to a terminal, terminal is selected based on process id, returns status code upon completion*/
 int writeTerminal() {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
@@ -150,6 +158,7 @@ int writeTerminal() {
 	
 }
 
+/*Sys 13, reads value to a terminal, terminal is selected based on process id, returns status code upon completion*/
 int readTerminal() {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
