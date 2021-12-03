@@ -2,9 +2,16 @@
 /*This module implements the TLB Exception Handler, the pager, and also reading and writing to flash devices to support the pager*/
 /*The swap pool table and swap pool semaphores will be local to this module, and as such they will not be globaly declared in initProc module*/
 
-static int i = 0;
-int pickVictim()
+#include "../h/const.h"
+#include "../h/types.h"
+#include "../h/initProc.h"
+#include "../h/vmSupport.h"
+#include "../h/sysSupport.h"
 
+static int i = 0;
+int pickVictim();
+int flashIO(int readFlash, int asid, int *framePtr); /*Helper method for flash IO, takes a parameter to determine whether to read or write*/
+swap_t swapPool[PGMAX];
 /*Page Fault Handler*/
 /*Implements the Pager*/
 void tlbExceptionHandler() {
@@ -33,9 +40,11 @@ void tlbExceptionHandler() {
 		(*victim) = (*victim) & VALIDMASK;
 		/*turn interrupts on*/
 		setStatus(getSTATUS() | IECON);
-		/*Write victim page to backing store*/ 
+		/*Write victim page to backing store*/
+		flashIO(WRITE, procsup->sup_exceptionState[0].sup_asid);
 	}
 	/*flash read*/
+	flashIO(READ, procsup->sup_exceptionState[0].sup_asid);
 	/*TUrn interrupts off*/
 	setStatus(getSTATUS() & IECOFF);
 	p = p & VALIDON & nextFrame;
@@ -68,3 +77,22 @@ int pickVictim() {
 	i = (i+1) % POOLSIZE;
 	return i;
 }
+
+int flashIO(int readFlash, int asid) {
+	/*Turn interrupts off*/
+	setStatus(getSTATUS() & IECOFF);
+	/*Determine device register*/
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((FLASH - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	if(readFlash) {
+		devrega->devReg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
+		devrega->devReg[devIndex].d_command = READBLK;
+	}
+	else{
+		devrega->devReg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
+		devrega->devReg[devIndex].d_command = WRITEBLK;
+	}
+	setStatus(getSTATUS() | IECON);
+	return SYSCALL(WAITIO, FLASHINT, asid, 0);
+}
+

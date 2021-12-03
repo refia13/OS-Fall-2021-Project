@@ -10,6 +10,7 @@
 /* Hardware & software constants */
 #define PAGESIZE		  4096			/* page size in bytes	*/
 #define WORDLEN			  4				  /* word size in bytes	*/
+#define BYTELEN	8
 
 
 /* timer, timescale, TOD-LO and other bus regs */
@@ -74,6 +75,7 @@
 #define STACKADDRESS 	0x20001000
 #define EXCEPTSTATEADDR 	0x0FFFF000
 #define BUSADDRESS 	0x10000000
+#define POOLSTARTADDR 0x20020000
 
 
 /* Pcb Constants */
@@ -163,10 +165,11 @@
 #define STARTPGNO 0x80000000
 #define DRON 0x00000400
 #define PRINTCHR	2
-#define BYTELEN	8
 #define RECVD	5
 #define TERMSTATMASK	0xFF
 #define ENTRYHISHIFT 5
 #define DIRTYON 0x00000400
-
+#define CHARTRANSM 5
+#define TEXTADDR 0x800000B0
+#define STACKPAGEADDR 0xC0000000
 #endif

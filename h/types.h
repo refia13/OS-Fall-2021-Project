@@ -17,8 +17,14 @@ typedef unsigned int memaddr;
 typedef struct pgte_t {
 	unsigned int entryHI;
 	unsigned int entryLO;
-}
+} pgte_t;
 
+typedef struct swap_t {
+	unsigned int id;
+	unsigned int pageNo;
+	pgte_t *pgptr;
+} swap_t;
+	
 /* Device Register */
 typedef struct {
 	unsigned int d_status;
@@ -82,7 +88,7 @@ typedef struct support_t {
 	int sup_asid;
 	state_t sup_exceptState[2];
 	context_t sup_exceptContext[2];
-	pge_t sup_privatePgTbl[32];
+	pgte_t sup_privatePgTbl[32];
 	int sup_stackTLB[500];
 	int sup_stackGen[500];
 

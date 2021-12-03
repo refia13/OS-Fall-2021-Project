@@ -1,16 +1,19 @@
 /*This is the start of the sysSupport module for phase 3.*/
 /*This module implements the support level general exception handler, the support level SYSCALL exception handler, and the support level Program Trap exception handler*/
-static int term_mut = 1;
-static int print_mut = 1;
+#include "../h/const.h"
+#include "../h/types.h"
+#include "../h/initProc.h"
+#include "../h/vmSupport.h"
+#include "../h/sysSupport.h"
 
 void supGenExceptionHandler() {
 	support_t *sup = SYSCALL (GETSUPPORTT, 0, 0, 0);
-	int cause = sup->sup_exceptState[0].s_cause & EXMASK;
+	int cause = sup->sup_exceptState[1].s_cause & EXMASK;
 	if(cause == 8){
-		supSyscallHandler(&(sup->exceptionState[0]));
+		supSyscallHandler(&(sup->exceptionState[1]));
 	}
 	else {
-		programTrapHandler(&(sup->exceptionState[0]));
+		programTrapHandler(&(sup->exceptionState[1]));
 	}
 }
 
@@ -25,13 +28,13 @@ void supSyscallHandler(state_PTR exceptState) {
 			retValue = (int) getTod();
 		}
 		case(PRNTRW) {
-			retValue = writePrinter(exceptState);
+			retValue = writePrinter();
 		}
 		case(TERMW) {
-			retValue = writeTerminal(exceptState);
+			retValue = writeTerminal();
 		}
 		case(TERMR) {
-			retValue = readTerminal(exceptState);
+			retValue = readTerminal();
 		}
 		default {
 			programTrapHandler(exceptState);
@@ -46,13 +49,13 @@ void programTrapHandler(state_PTR exceptState) {
 	/*Check if holding mutex on something*/
 	
 	/*terminate*/
-	SYSCALL (TERMINATE,0,0,0);
+	SYSCALL (TERMPROCESS,0,0,0);
 }
 /*User mode wrapper for the kernal mode exclusive SYS2*/
 void terminateUProc();
 {
 	
-	SYSCALL (TERMINATE, 0, 0, 0);
+	SYSCALL (TERMPROCESS, 0, 0, 0);
 }
 
 unsigned int getTod() {
@@ -61,53 +64,103 @@ unsigned int getTod() {
 	return currentTod;
 }
 
-int writePrinter(state_PTR exceptionState) {
-	char *s = msg;
-	devregtr * base = (devregtr *) (TERM0ADDR);
-	devregtr status;
-	
-	SYSCALL(PASSERN, (int)&print_mut, 0, 0);				/* P(term_mut) */
-	while (*s != EOS) {
-		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		status = SYSCALL(WAITIO, PRINTER, 0, 0);	
-		if ((status & TERMSTATMASK) != RECVD)
-			/*Store error code*/
-		s++;	
+int writePrinter() {
+	/*Turn interrupts off*/
+	setStatus(getSTATUS() & IECOFF);
+	/*Determine device register*/
+	support_t *sup = SYCALL(GETSUPPORTT, 
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((PRINTER - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
+	state_PTR sysState = sysSup->sup_exceptState[GENERALEXCEPT];
+	char *s = sysState->s_a1;
+	int length = sysState->s_a2;
+	int asid = sysSup->sup_asid;
+	if(length < 0 || length > 128) {
+		SYSCALL(TERMPROCESS,0,0,0);
 	}
-	SYSCALL(VERHOGEN, (int)&print_mut, 0, 0);
-	return status;
+	if(s < 0xC0000000) {
+		SYSCALL(TERMPROCESS,0,0,0);
+	}
+	int i = 0;
+	SYSCALL(PASSEREN, &(devMutex[devIndex],0,0));
+	while(i < length) {
+		devrega->devreg[devIndex].d_data0 = (*s);
+		devrega->devreg[devIndex].d_command = PRINTCHR;
+		int retCode = SYSCALL(WAITFORIO, PRINTER, asid, 0);
+		if(retCode != 1) {
+			return -1*retCode;
+		}
+		i++;
+		s++;
+	}
+	SYSCALL(VERHOGEN, &(devMutex[devIndex],0,0));
+	return retCode;
+	
 }
 
-int writeTerminal(state_PTR exceptionState) {
-	char *s = msg;
-	devregtr * base = (devregtr *) (TERM0ADDR);
-	devregtr status;
-	
-	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
-	while (*s != EOS) {
-		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		status = SYSCALL(WAITIO, TERMINAL, 0, 0);	
-		if ((status & TERMSTATMASK) != RECVD)
-			/*Store error code*/
-		s++;	
+int writeTerminal() {
+	/*Turn interrupts off*/
+	setStatus(getSTATUS() & IECOFF);
+	/*Determine device register*/
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
+	state_PTR sysState = sysSup->sup_exceptState[GENERALEXCEPT];
+	char *s = sysState->s_a1;
+	int length = sysState->s_a2;
+	int asid = sysSup->sup_asid;
+	if(length < 0 || length > 128) {
+		SYSCALL(TERMPROCESS,0,0,0);
 	}
-	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);
-	return status;
+	if(s < 0xC0000000) {
+		SYSCALL(TERMPROCESS,0,0,0);
+	}
+	int i = 0;
+	SYSCALL(PASSEREN, &(devMutex[devIndex],0,0));
+	while(i < length) {
+		devrega->devreg[devIndex].t_transm_command = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		int retCode = SYSCALL(WAITFORIO, TERMINAL, asid, 0);
+		if(retCode != 1) {
+			return -1*retCode;
+		}
+		i++;
+		s++;
+	}
+	SYSCALL(VERHOGEN, &(devMutex[devIndex],0,0));
+	return retCode;
+	
 }
 
-int readTerminal(state_PTR exceptionState) {
-	char *s = msg;
-	devregtr * base = (devregtr *) (TERM0ADDR);
-	devregtr status;
-	
-	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
-	while (*s != EOS) {
-		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		status = SYSCALL(WAITIO, TERMINAL, 1, 0);	
-		if ((status & TERMSTATMASK) != RECVD)
-			/*Store error code*/
-		s++;	
+int readTerminal() {
+	/*Turn interrupts off*/
+	setStatus(getSTATUS() & IECOFF);
+	/*Determine device register*/
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
+	state_PTR sysState = sysSup->sup_exceptState[GENERALEXCEPT];
+	char *s = sysState->s_a1;
+	int length = sysState->s_a2;
+	int asid = sysSup->sup_asid;
+	if(length < 0 || length > 128) {
+		SYSCALL(TERMPROCESS,0,0,0);
 	}
-	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);
-	return status;
+	if(s < 0xC0000000) {
+		SYSCALL(TERMPROCESS,0,0,0);
+	}
+	int i = 0;
+	SYSCALL(PASSEREN, &(devMutex[devIndex],0,0));
+	while(i < length) {
+		devrega->devreg[devIndex].t_recv_command = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		int retCode = SYSCALL(WAITFORIO, TERMINAL, asid, 1);
+		if(retCode != 1) {
+			return -1*retCode;
+		}
+		i++;
+		s++;
+	}
+	SYSCALL(VERHOGEN, &(devMutex[devIndex+8],0,0));
+	return retCode;
+	
 }
