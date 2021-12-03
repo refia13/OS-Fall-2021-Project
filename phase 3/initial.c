@@ -110,7 +110,7 @@ int genExceptionHandler() {
 	/*Case 2 Cause Code <= 3 && >=1: TLB*/
 	else if(excCode <= TLBREFILLEXCEPT)
 	{
-		tlbExceptionHandler();
+		passUpOrDie(PGFAULTEXCEPT);
 	}
 	/*Case 3 Code == 8: SYSCALL*/
 	else if(excCode == SYSCALLEXCEPT)
@@ -123,7 +123,7 @@ int genExceptionHandler() {
 	}
 	
 	/*Error handling, should not be able to get here, serious issue if this is called*/
-	programTrapHandler();
+	passUpOrDie(GENERALEXCEPT);
 	return 0;
 }
 

@@ -7,54 +7,56 @@
 #include "../h/initProc.h"
 #include "../h/vmSupport.h"
 #include "../h/sysSupport.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 static int i = 0;
 int pickVictim();
-int flashIO(int readFlash, int asid, int *framePtr); /*Helper method for flash IO, takes a parameter to determine whether to read or write*/
+static int swapSem = 1;
+int flashIO(int readFlash, int asid); /*Helper method for flash IO, takes a parameter to determine whether to read or write*/
 swap_t swapPool[PGMAX];
 /*Page Fault Handler*/
 /*Implements the Pager*/
 void tlbExceptionHandler() {
 	support_t *procsup = SYSCALL (GETSUPPORTT,0,0,0);
-	int cause = (procsup->sup_exceptState[0].s_cause & EXCMASK) >>2;
+	int cause = (procsup->sup_exceptState[0].s_cause & EXMASK) >>2;
 	if(cause == TLBMOD) {
 		/*TLB Modification Exception, treat as a program trap*/
-		programTrapHandler();
+		programTrapHandler(&(procsup->sup_exceptState[GENERALEXCEPT]));
 		
 	}
 	SYSCALL (PASSEREN,&swapSem,0,0); /*Perform a sys3 on the swap pool semaphore (mutex semaphore)*/
 	
 	/*Determine the missing page number*/
-	int p = procsup->sup_exceptionState[0].entryHI & VPNMASK
+	int p = procsup->sup_exceptState[PGFAULTEXCEPT].s_entryHI & VPNMASK;
 	
 	/*Pick a frame from the swap pool based on nextFrame*/
 	int nextFrame = pickVictim();
-	int frame = swapPool[nextFrame];
+	swap_t *frame = &swapPool[nextFrame];
 	/*determine if the frame chosen is occupied*/
 	if(frame != NULL) {
 		/*turn interrupts off*/
-		setStatus(getSTATUS() & IECOFF);
+		setSTATUS((getSTATUS() >> 1) << 1);
 		/*update page table of victim*/
-		tlbclr();
+		TLBCLR();
 		support_t *victim = SYSCALL (GETSUPPORTT,0,0,0);
-		(*victim) = (*victim) & VALIDMASK;
+		frame->pgptr->entryLO & VALIDOFF;
 		/*turn interrupts on*/
-		setStatus(getSTATUS() | IECON);
+		setSTATUS(getSTATUS() | IECON);
 		/*Write victim page to backing store*/
-		flashIO(WRITE, procsup->sup_exceptionState[0].sup_asid);
+		flashIO(WRITE, procsup->sup_asid);
 	}
 	/*flash read*/
-	flashIO(READ, procsup->sup_exceptionState[0].sup_asid);
+	flashIO(READ, procsup->sup_asid);
 	/*TUrn interrupts off*/
-	setStatus(getSTATUS() & IECOFF);
+	setSTATUS((getSTATUS() >> 1) << 1);
 	p = p & VALIDON & nextFrame;
 	frame = p;
 	
 	/*Turn interrupts on*/
-	setStatus(getSTATUS() | IECON);
-	tlbclr();
+	setSTATUS(getSTATUS() | IECON);
+	TLBCLR();
 	SYSCALL (VERHOGEN, &swapSem, 0, 0);
-	LDST(&(procsup->sup_exceptionState[0]));
+	LDST(&(procsup->sup_exceptState[PGFAULTEXCEPT]));
 }
 
 void uTLB_RefillHandler() {
@@ -63,10 +65,10 @@ void uTLB_RefillHandler() {
 	support_t *currSupp = SYSCALL (GETSUPPORTT,0,0,0);
 	/*determine page number*/
 	int pageNo = exceptionState->s_entryHI & VPNMASK;
-	unsigned int pageEntry = currSupp->sup_privatePgTbl[[pageNo - STARTPGNO];
+	pgte_t pageEntry = currSupp->sup_privatePgTbl[pageNo - STARTPGNO];
 	/*Write the page table entry into the tlb*/
-	setENTRYHI(pageEntry & ENTRYHIMASK);
-	setENTRYLO(pageEntry & ENTRYLOMASK);
+	setENTRYHI(pageEntry.entryHI);
+	setENTRYLO(pageEntry.entryLO);
 	TLBWR();
 	/*return control to the currentProc*/
 	LDST(exceptionState);
@@ -80,19 +82,19 @@ int pickVictim() {
 
 int flashIO(int readFlash, int asid) {
 	/*Turn interrupts off*/
-	setStatus(getSTATUS() & IECOFF);
+	setSTATUS((getSTATUS() >> 1) << 1);
 	/*Determine device register*/
 	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
 	int devIndex = ((FLASH - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
 	if(readFlash) {
-		devrega->devReg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
-		devrega->devReg[devIndex].d_command = READBLK;
+		devrega->devreg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
+		devrega->devreg[devIndex].d_command = READBLK;
 	}
 	else{
-		devrega->devReg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
-		devrega->devReg[devIndex].d_command = WRITEBLK;
+		devrega->devreg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
+		devrega->devreg[devIndex].d_command = WRITEBLK;
 	}
-	setStatus(getSTATUS() | IECON);
-	return SYSCALL(WAITIO, FLASHINT, asid, 0);
+	setSTATUS(getSTATUS() | IECON);
+	return SYSCALL(WAITFORIO, FLASHINT, asid, 0);
 }
 

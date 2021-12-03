@@ -5,7 +5,8 @@
 #include "../h/initProc.h"
 #include "../h/vmSupport.h"
 #include "../h/sysSupport.h"
-
+#include "/usr/include/umps3/umps/libumps.h"
+int procSem;
 int devMutex[SEMCOUNT];
 /*test function, instantiates the processes for phase 3*/
 void test() {
@@ -15,6 +16,7 @@ void test() {
 	int i;
 	int j;
 	int resultCode;
+	procSem = 0;
 	for(i = 0; i < SEMCOUNT; i++) {
 		devMutex[i] = 1;
 	}

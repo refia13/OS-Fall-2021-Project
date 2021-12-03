@@ -331,15 +331,7 @@ void passUpOrDie(unsigned int passUpCase)
 		terminateProcess(currentProc); 
 		scheduler();}
 }
-/*Nucleus level programTrapHandler, performs a passUpOrDie operation with the value GENERALEXCEPT*/
-void programTrapHandler() {
-	
-	passUpOrDie(GENERALEXCEPT);
-}
-/*Nucleus level tlbException Handler, performs a passUpOrDie operation with the value PGFAULTEXCEPT*/
-void tlbExceptionHandler() {
-	passUpOrDie(PGFAULTEXCEPT);
-}
+
 
 
 

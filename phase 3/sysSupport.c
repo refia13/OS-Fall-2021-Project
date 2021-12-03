@@ -5,44 +5,49 @@
 #include "../h/initProc.h"
 #include "../h/vmSupport.h"
 #include "../h/sysSupport.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 void supGenExceptionHandler() {
 	support_t *sup = SYSCALL (GETSUPPORTT, 0, 0, 0);
 	int cause = sup->sup_exceptState[1].s_cause & EXMASK;
 	if(cause == 8){
-		supSyscallHandler(&(sup->exceptionState[1]));
+		supSyscallHandler(&(sup->sup_exceptState[GENERALEXCEPT]));
 	}
 	else {
-		programTrapHandler(&(sup->exceptionState[1]));
+		programTrapHandler(&(sup->sup_exceptState[GENERALEXCEPT]));
 	}
 }
 
 void supSyscallHandler(state_PTR exceptState) {
-	int sysCode = exceptState.s_a0;
+	int sysCode = exceptState->s_a0;
 	int retValue;
 	switch(sysCode) {
-		case(UTERMINATE) {
+		case(UTERMINATE):
 			terminateUProc();
-		}
-		case(GETTOD) {
+			break;
+		
+		case(GETTOD):
 			retValue = (int) getTod();
-		}
-		case(PRNTRW) {
+			break;
+		
+		case(PRNTRW):
 			retValue = writePrinter();
-		}
-		case(TERMW) {
+			break;
+		
+		case(TERMW):
 			retValue = writeTerminal();
-		}
-		case(TERMR) {
+			break;
+		
+		case(TERMR):
 			retValue = readTerminal();
-		}
-		default {
+			break;
+		
+		default:
 			programTrapHandler(exceptState);
-		}
 	}
-	exceptionState->s_v0 = retValue;
-	exceptionState->s_pc += WORDLEN;
-	LDST(exceptionState);
+	exceptState->s_v0 = retValue;
+	exceptState->s_pc += WORDLEN;
+	LDST(exceptState);
 }
 
 void programTrapHandler(state_PTR exceptState) {
@@ -52,7 +57,7 @@ void programTrapHandler(state_PTR exceptState) {
 	SYSCALL (TERMPROCESS,0,0,0);
 }
 /*User mode wrapper for the kernal mode exclusive SYS2*/
-void terminateUProc();
+void terminateUProc()
 {
 	
 	SYSCALL (TERMPROCESS, 0, 0, 0);
@@ -66,101 +71,122 @@ unsigned int getTod() {
 
 int writePrinter() {
 	/*Turn interrupts off*/
-	setStatus(getSTATUS() & IECOFF);
+	setSTATUS((getSTATUS() >> 1) << 1);
 	/*Determine device register*/
-	support_t *sup = SYCALL(GETSUPPORTT, 
-	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
-	int devIndex = ((PRINTER - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
 	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
-	state_PTR sysState = sysSup->sup_exceptState[GENERALEXCEPT];
+	state_PTR sysState = &sysSup->sup_exceptState[GENERALEXCEPT];
 	char *s = sysState->s_a1;
 	int length = sysState->s_a2;
 	int asid = sysSup->sup_asid;
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	/*Check if string is within the acceptable length*/
 	if(length < 0 || length > 128) {
 		SYSCALL(TERMPROCESS,0,0,0);
 	}
+	/*Check if bad addr*/
 	if(s < 0xC0000000) {
 		SYSCALL(TERMPROCESS,0,0,0);
 	}
 	int i = 0;
-	SYSCALL(PASSEREN, &(devMutex[devIndex],0,0));
+	int retCode;
+	/*Gain Mutex*/
+	SYSCALL(PASSEREN, &(devMutex[devIndex]),0,0);
 	while(i < length) {
+	/*Loop through string until entire string has been sent to the device*/
 		devrega->devreg[devIndex].d_data0 = (*s);
 		devrega->devreg[devIndex].d_command = PRINTCHR;
-		int retCode = SYSCALL(WAITFORIO, PRINTER, asid, 0);
+		retCode = SYSCALL(WAITFORIO, PRINTER, asid, 0);
 		if(retCode != 1) {
 			return -1*retCode;
 		}
 		i++;
 		s++;
 	}
-	SYSCALL(VERHOGEN, &(devMutex[devIndex],0,0));
+	SYSCALL(VERHOGEN, &(devMutex[devIndex]),0,0);
+	/*Turn Interrupts On*/
+	setSTATUS(getSTATUS() & IECON);
 	return retCode;
 	
 }
 
 int writeTerminal() {
 	/*Turn interrupts off*/
-	setStatus(getSTATUS() & IECOFF);
-	/*Determine device register*/
-	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
-	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	setSTATUS((getSTATUS() >> 1) << 1);
 	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
-	state_PTR sysState = sysSup->sup_exceptState[GENERALEXCEPT];
+	state_PTR sysState = &sysSup->sup_exceptState[GENERALEXCEPT];
 	char *s = sysState->s_a1;
 	int length = sysState->s_a2;
 	int asid = sysSup->sup_asid;
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	/*Check if string is within the acceptable length*/
 	if(length < 0 || length > 128) {
 		SYSCALL(TERMPROCESS,0,0,0);
 	}
+	/*check if bad addr*/
 	if(s < 0xC0000000) {
 		SYSCALL(TERMPROCESS,0,0,0);
 	}
 	int i = 0;
-	SYSCALL(PASSEREN, &(devMutex[devIndex],0,0));
+	int retCode;
+	/*Gain Mutex*/
+	SYSCALL(PASSEREN, &(devMutex[devIndex]),0,0);
 	while(i < length) {
-		devrega->devreg[devIndex].t_transm_command = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		int retCode = SYSCALL(WAITFORIO, TERMINAL, asid, 0);
+		/*Loop through string until entire string has been sent to the device*/
+		devrega->devreg[devIndex].t_transm_command = PRINTCHR | ((*s) << BYTELEN);
+		retCode = SYSCALL(WAITFORIO, TERMINAL, asid, 0);
 		if(retCode != 1) {
 			return -1*retCode;
 		}
 		i++;
 		s++;
 	}
-	SYSCALL(VERHOGEN, &(devMutex[devIndex],0,0));
+	SYSCALL(VERHOGEN, &(devMutex[devIndex]),0,0);
+	/*Turn Interrupts On*/
+	setSTATUS(getSTATUS() & IECON);
 	return retCode;
 	
 }
 
 int readTerminal() {
 	/*Turn interrupts off*/
-	setStatus(getSTATUS() & IECOFF);
+	setSTATUS((getSTATUS() >> 1) << 1);
 	/*Determine device register*/
-	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
-	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	
 	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
-	state_PTR sysState = sysSup->sup_exceptState[GENERALEXCEPT];
+	state_PTR sysState = &sysSup->sup_exceptState[GENERALEXCEPT];
 	char *s = sysState->s_a1;
 	int length = sysState->s_a2;
 	int asid = sysSup->sup_asid;
+	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+	int devIndex = ((TERMINAL - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	/*Check if string is within the acceptable length*/
 	if(length < 0 || length > 128) {
 		SYSCALL(TERMPROCESS,0,0,0);
 	}
+	/*Check if bad addr*/
 	if(s < 0xC0000000) {
 		SYSCALL(TERMPROCESS,0,0,0);
 	}
 	int i = 0;
-	SYSCALL(PASSEREN, &(devMutex[devIndex],0,0));
+	int retCode;
+	/*Gain Mutex*/
+	SYSCALL(PASSEREN, &(devMutex[devIndex]),0,0);
 	while(i < length) {
-		devrega->devreg[devIndex].t_recv_command = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		int retCode = SYSCALL(WAITFORIO, TERMINAL, asid, 1);
+		/*Loop through string until entire string has been sent to the device*/
+		devrega->devreg[devIndex].t_recv_command = PRINTCHR | ((*s) << BYTELEN);
+		retCode = SYSCALL(WAITFORIO, TERMINAL, asid, 1);
 		if(retCode != 1) {
 			return -1*retCode;
 		}
 		i++;
 		s++;
 	}
-	SYSCALL(VERHOGEN, &(devMutex[devIndex+8],0,0));
+	/*Release Mutex*/
+	SYSCALL(VERHOGEN, &(devMutex[devIndex+8]),0,0);
+	/*Turn Interrupts On*/
+	setSTATUS(getSTATUS() & IECON);
 	return retCode;
 	
 }

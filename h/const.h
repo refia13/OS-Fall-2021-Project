@@ -149,6 +149,11 @@
 #define GETCPUT 	6
 #define WAITFORCLOCK 	7
 #define GETSUPPORTT 	8
+#define UTERMINATE 9
+#define GETTOD 10
+#define PRNTRW 11
+#define TERMW 12
+#define TERMR 13
 
 /*Mneumonic Constants*/
 #define PCINCREMENT 	4
@@ -172,4 +177,13 @@
 #define CHARTRANSM 5
 #define TEXTADDR 0x800000B0
 #define STACKPAGEADDR 0xC0000000
+#define TLBMOD 1
+#define READBLK 2
+#define WRITEBLK 3
+#define VALIDON 0x00000200
+#define READ 1
+#define WRITE 0
+#define VALIDMASK 0x00000200
+#define VPNMASK 0xFFFFF000
+#define VALIDOFF 0xFFFFFDFF
 #endif
