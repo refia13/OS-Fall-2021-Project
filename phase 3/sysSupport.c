@@ -72,7 +72,7 @@ unsigned int getTod() {
 int writePrinter() {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
-	/*Determine device register*/
+	/*Get support structure, processor state, device register, and local variables*/
 	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
 	state_PTR sysState = &sysSup->sup_exceptState[GENERALEXCEPT];
 	char *s = sysState->s_a1;
@@ -113,6 +113,7 @@ int writePrinter() {
 int writeTerminal() {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
+	/*Get support structure, processor state, device register, and local variables*/
 	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
 	state_PTR sysState = &sysSup->sup_exceptState[GENERALEXCEPT];
 	char *s = sysState->s_a1;
@@ -152,8 +153,7 @@ int writeTerminal() {
 int readTerminal() {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() >> 1) << 1);
-	/*Determine device register*/
-	
+	/*Get support structure, processor state, device register, and local variables*/
 	support_t *sysSup = SYSCALL(GETSUPPORTT, 0, 0, 0);
 	state_PTR sysState = &sysSup->sup_exceptState[GENERALEXCEPT];
 	char *s = sysState->s_a1;
