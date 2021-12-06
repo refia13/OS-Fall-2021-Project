@@ -8,6 +8,11 @@
 #include "/usr/include/umps3/umps/libumps.h"
 int procSem;
 int devMutex[SEMCOUNT];
+extern void tlbExceptionHandler();
+extern void supGenExceptionHandler();
+debugA(int a) {
+	return a;
+}
 /*test function, initializes up to UPROCMAX (1-8) processes*/
 void test() {
 	/*Initialize the Phase 3 data structures*/
@@ -21,6 +26,9 @@ void test() {
 		devMutex[i] = 1;
 	}
 	for(i = 0; i < UPROCMAX; i++) {
+		
+	}
+	for(i = 1; i <= UPROCMAX; i++) {
 		/*Set up the UPROC state*/
 		state_t uState;
 		uState.s_pc = TEXTADDR;
@@ -28,21 +36,21 @@ void test() {
 		uState.s_status = ALLOFF | KUPON | IEPON | IMON | TEON;
 		uState.s_entryHI = ALLOFF | i;
 		/*Set up the UPROC Support Structure*/
-		support_t *uSup;
-		uSup->sup_asid = i;
+		support_t uSup;
+		uSup.sup_asid = i;
 		for(j = 0; j < PGMAX - 1; j++) {
-			uSup->sup_privatePgTbl[j].entryHI = (STARTPGNO + j) | i << ENTRYHISHIFT;
-			uSup->sup_privatePgTbl[j].entryLO = ALLOFF | DIRTYON;
+			uSup.sup_privatePgTbl[j].entryHI = (((0x80000 + j) << 6 ) + i ) << 6;
+			uSup.sup_privatePgTbl[j].entryLO = ALLOFF | DIRTYON;
 		}
-		uSup->sup_privatePgTbl[31].entryHI = 0xBFFFF + i;
-		uSup->sup_privatePgTbl[31].entryLO = ALLOFF | DIRTYON;
-		uSup->sup_exceptContext[1].c_stackPtr = (int) &(uSup->sup_stackGen[500]);
-		uSup->sup_exceptContext[0].c_stackPtr = (int) &(uSup->sup_stackTLB[500]);
-		uSup->sup_exceptContext[0].c_pc = (memaddr) tlbExceptionHandler;
-		uSup->sup_exceptContext[1].c_pc = (memaddr) supGenExceptionHandler;
-		uSup->sup_exceptContext[0].c_status = ALLOFF | IEPON | IMON | TEON;
-		uSup->sup_exceptContext[1].c_status = ALLOFF | IEPON | IMON | TEON;
-		resultCode = SYSCALL (CREATEPROCESS, &(uState), uSup, 0);
+		uSup.sup_privatePgTbl[31].entryHI = ((0xBFFFF) << 6) + i << 6;
+		uSup.sup_privatePgTbl[31].entryLO = ALLOFF | DIRTYON;
+		uSup.sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = (int) &(uSup.sup_stackGen[500]);
+		uSup.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) &(uSup.sup_stackTLB[500]);
+		uSup.sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) tlbExceptionHandler;
+		uSup.sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supGenExceptionHandler;
+		uSup.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPON | IMON | TEON;
+		uSup.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPON | IMON | TEON;
+		resultCode = SYSCALL (CREATEPROCESS, &(uState), &uSup, 0);
 		if(resultCode != ERRORCODE) {
 			SYSCALL(PASSEREN, &procSem,0,0);
 		}	
