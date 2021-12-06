@@ -66,23 +66,22 @@ void tlbExceptionHandler() {
 
 /*uTLB refill handler, updates tlb with missing page table entry*/
 void uTLB_RefillHandler() {
-
+	/*Determine the missing page number by inspecting the entryHI register of the exception
+	state stored in the bios data page*/
 	state_PTR exceptionState = (state_PTR) BIOSDATAPAGE;
-	support_t *currSupp = SYSCALL (GETSUPPORTT,0,0,0);
-	/*determine page number*/
-	int pageNo = exceptionState->s_entryHI & VPNMASK;
-	
-	pageNo = pageNo % 32;
-	debugB(pageNo);
-	pgte_t *pageEntry = &(currSupp->sup_privatePgTbl[pageNo]);
-	unsigned int eH = pageEntry->entryHI;
-	unsigned int eL = pageEntry->entryLO;
-	/*Write the page table entry into the tlb*/
-	setENTRYHI(pageEntry->entryHI);
-	setENTRYLO(pageEntry->entryLO);
+	int missingNo = (exceptionState->s_entryHI & VPNMASK) >> VPNSHIFT;
+	missingNo = missingNo % 32;
+	/*Get the page table entry for page number missingNo for the currentProcess.*/
+	support_t *pageSup = SYSCALL(GETSUPPORTT,0,0,0);
+	unsigned int entryHI = pageSup->sup_privatePgTbl[missingNo].entryHI;
+	unsigned int entryLO = pageSup->sup_privatePgTbl[missingNo].entryLO;
+	/*Write the missing entry into the TLB*/
+	debugB(entryHI);
+	debugB(entryLO);
+	setENTRYHI(entryHI);
+	setENTRYLO(entryLO);
 	TLBWR();
-	/*return control to the currentProc*/
-	debugB((int)exceptionState);
+	/*Return Control to the current process and reattempt the address translation*/
 	LDST(exceptionState);
 	
 }
@@ -99,7 +98,7 @@ int flashIO(int readFlash, int asid) {
 	setSTATUS((getSTATUS() >> 1) << 1);
 	/*Determine device register*/
 	devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
-	int devIndex = ((FLASH - NONPERIPHERALDEV) * DEVPERLINE) + (asid);
+	int devIndex = ((FLASH - NONPERIPHERALDEV) * DEVPERLINE) + (asid-1);
 	if(readFlash) {
 		devrega->devreg[devIndex].d_data0 = (asid*PAGESIZE) + POOLSTARTADDR;
 		devrega->devreg[devIndex].d_command = READBLK;

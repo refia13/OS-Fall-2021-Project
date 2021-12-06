@@ -10,6 +10,8 @@ int procSem;
 int devMutex[SEMCOUNT];
 extern void tlbExceptionHandler();
 extern void supGenExceptionHandler();
+static support_t supportArray[UPROCMAX];
+static state_t stateArray[UPROCMAX];
 debugA(int a) {
 	return a;
 }
@@ -25,35 +27,34 @@ void test() {
 	for(i = 0; i < SEMCOUNT; i++) {
 		devMutex[i] = 1;
 	}
+	
 	for(i = 0; i < UPROCMAX; i++) {
-		
-	}
-	for(i = 1; i <= UPROCMAX; i++) {
-		/*Set up the UPROC state*/
-		state_t uState;
-		uState.s_pc = TEXTADDR;
-		uState.s_sp = STACKPAGEADDR;
-		uState.s_status = ALLOFF | KUPON | IEPON | IMON | TEON;
-		uState.s_entryHI = ALLOFF | i;
-		/*Set up the UPROC Support Structure*/
-		support_t uSup;
-		uSup.sup_asid = i;
+		/*Set up the Processor State*/
+		stateArray[i].s_pc = TEXTADDR;
+		stateArray[i].s_t9 = TEXTADDR;
+		stateArray[i].s_sp = STACKPAGEADDR;
+		stateArray[i].s_status = ALLOFF | KUPON | IEPON | IMON | TEON;
+		stateArray[i].s_entryHI = (i+1) << 6;
+		debugA(stateArray[i].s_entryHI);
+		/*Set up the Support Structure*/
+		supportArray[i].sup_asid = i+1;
+		supportArray[i].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) tlbExceptionHandler;
+		supportArray[i].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPON | IMON | TEON;
+		supportArray[i].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = (int) &(supportArray[i].sup_stackTLB[499]);
+		supportArray[i].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supGenExceptionHandler;
+		supportArray[i].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPON | IMON | TEON;
+		supportArray[i].sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) &(supportArray[i].sup_stackGen[499]);
+		/*Set up the Page Table for the U Proc*/
+		int j;
 		for(j = 0; j < PGMAX - 1; j++) {
-			uSup.sup_privatePgTbl[j].entryHI = (((0x80000 + j) << 6 ) + i ) << 6;
-			uSup.sup_privatePgTbl[j].entryLO = ALLOFF | DIRTYON;
+			supportArray[i].sup_privatePgTbl[j].entryHI = (((0x80000) + j) << 6) + (i+1) << 6;
+			supportArray[i].sup_privatePgTbl[j].entryLO = ALLOFF | DIRTYON;
 		}
-		uSup.sup_privatePgTbl[31].entryHI = ((0xBFFFF) << 6) + i << 6;
-		uSup.sup_privatePgTbl[31].entryLO = ALLOFF | DIRTYON;
-		uSup.sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = (int) &(uSup.sup_stackGen[500]);
-		uSup.sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) &(uSup.sup_stackTLB[500]);
-		uSup.sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) tlbExceptionHandler;
-		uSup.sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supGenExceptionHandler;
-		uSup.sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPON | IMON | TEON;
-		uSup.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPON | IMON | TEON;
-		resultCode = SYSCALL (CREATEPROCESS, &(uState), &uSup, 0);
-		if(resultCode != ERRORCODE) {
-			SYSCALL(PASSEREN, &procSem,0,0);
-		}	
+		/*Set up the stack page*/
+		supportArray[i].sup_privatePgTbl[PGMAX-1].entryHI = (((0xBFFFF) << 6) + (i+1)) << 6;
+		supportArray[i].sup_privatePgTbl[PGMAX-1].entryLO = ALLOFF | DIRTYON;
+		SYSCALL(CREATEPROCESS, &stateArray[i], &supportArray[i], 0);
+		SYSCALL(PASSEREN, &procSem, 0, 0);
 		
 	}
 	/*All processes have finished, terminate*/
