@@ -16,6 +16,7 @@
 #include "../h/const.h"
 extern int procSem;
 extern int devMutex[SEMCOUNT];
+extern swap_t swapPool[POOLMAX];
 
 /*******************************************************************/
 

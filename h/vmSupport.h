@@ -17,7 +17,7 @@
 extern int pickVictim();
 extern void tlbExceptionHandler();
 extern void uTLB_RefillHandler();
-extern int  flashIO(int command, int id);
+extern int  flashIO(int command, int id, int frameNo);
 /*******************************************************************/
 
 #endif

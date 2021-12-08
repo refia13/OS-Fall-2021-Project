@@ -12,22 +12,27 @@ extern void tlbExceptionHandler();
 extern void supGenExceptionHandler();
 static support_t supportArray[UPROCMAX];
 static state_t stateArray[UPROCMAX];
+swap_t swapPool[POOLMAX];
 debugA(int a) {
 	return a;
 }
 /*test function, initializes up to UPROCMAX (1-8) processes*/
 void test() {
-	/*Initialize the Phase 3 data structures*/
-	/*Initialize and launch the processes*/
-	
+	/*Initialize the local variables*/
 	int i;
 	int j;
 	int resultCode;
 	procSem = 0;
+	/*Initialize the mutex device semaphores*/
 	for(i = 0; i < SEMCOUNT; i++) {
 		devMutex[i] = 1;
 	}
-	
+	/*Initialize the swap pool*/
+	for(i = 0; i < POOLMAX; i++) {
+		swapPool[i].id = -1;
+		swapPool[i].pageNo = i;
+		swapPool[i].pgptr = NULL;
+	}
 	for(i = 0; i < UPROCMAX; i++) {
 		/*Set up the Processor State*/
 		stateArray[i].s_pc = TEXTADDR;
@@ -47,11 +52,11 @@ void test() {
 		/*Set up the Page Table for the U Proc*/
 		int j;
 		for(j = 0; j < PGMAX - 1; j++) {
-			supportArray[i].sup_privatePgTbl[j].entryHI = (((0x80000) + j) << 6) + (i+1) << 6;
+			supportArray[i].sup_privatePgTbl[j].entryHI = ((0x80000 + j) << VPNSHIFT) | ((i+1) << 6);
 			supportArray[i].sup_privatePgTbl[j].entryLO = ALLOFF | DIRTYON;
 		}
 		/*Set up the stack page*/
-		supportArray[i].sup_privatePgTbl[PGMAX-1].entryHI = (((0xBFFFF) << 6) + (i+1)) << 6;
+		supportArray[i].sup_privatePgTbl[PGMAX-1].entryHI = (0xBFFFF << VPNSHIFT) | (i << 6);
 		supportArray[i].sup_privatePgTbl[PGMAX-1].entryLO = ALLOFF | DIRTYON;
 		SYSCALL(CREATEPROCESS, &stateArray[i], &supportArray[i], 0);
 		SYSCALL(PASSEREN, &procSem, 0, 0);

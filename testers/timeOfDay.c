@@ -4,10 +4,13 @@
 #include "h/tconst.h"
 #include "h/print.h"
 
+debugD(int a) {
+	return a;
+}
 void main() {
 	unsigned int now1 ,now2;
 	int i;
-
+	debugD(1);
 	now1 = SYSCALL(GET_TOD, 0, 0, 0);
 	print(WRITETERMINAL, "todTest starts\n");
 	now1 = SYSCALL(GET_TOD, 0, 0, 0);

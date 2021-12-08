@@ -165,7 +165,7 @@
 
 /*Support Level Constants*/
 #define UPROCMAX 1
-#define POOLSIZE 32
+#define POOLSIZE 20
 #define PGMAX 32
 #define STARTPGNO 0x80000000
 #define DRON 0x00000400
@@ -188,4 +188,7 @@
 #define VALIDOFF 0xFFFFFDFF
 #define STARTVPN 0x02000000
 #define VPNSHIFT 12
+#define IECOFF 0xFFFFFFFE
+#define POOLMAX 20
+#define FRAMESHIFT 8
 #endif

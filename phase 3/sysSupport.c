@@ -7,56 +7,65 @@
 #include "../h/sysSupport.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+debugC(int a) {
+	return a;
+}
 /*Support level general exception handler, covers all non-tlb exceptions in phase 3*/
 /*Either passes to syscall handler or program trap handler, based on cause*/
 void supGenExceptionHandler() {
 	support_t *sup = SYSCALL (GETSUPPORTT, 0, 0, 0);
-	int cause = sup->sup_exceptState[1].s_cause & EXMASK;
+	int cause = (sup->sup_exceptState[GENERALEXCEPT].s_cause & EXMASK) >> 2;
+	debugC(cause);
 	if(cause == 8){
+		/*Syscall, move into the support level syscall handler*/
 		supSyscallHandler(&(sup->sup_exceptState[GENERALEXCEPT]));
 	}
 	else {
+		/*Not a syscall, treat as a program trap*/
 		programTrapHandler(&(sup->sup_exceptState[GENERALEXCEPT]));
 	}
 }
 
 /*Support level syscall handler, defines sys 9-13*/
 void supSyscallHandler(state_PTR exceptState) {
+	/*Get the relevant syscall code from a0*/
 	int sysCode = exceptState->s_a0;
 	int retValue;
 	switch(sysCode) {
 		case(UTERMINATE):
+		/*Sys 9*/
 			terminateUProc();
 			break;
 		
-		case(GETTOD):
+		case(GETTOD): /*Sys 10*/
 			retValue = (int) getTod();
 			break;
 		
-		case(PRNTRW):
+		case(PRNTRW): /*Sys 11*/
 			retValue = writePrinter();
 			break;
 		
-		case(TERMW):
+		case(TERMW): /*Sys 12*/
 			retValue = writeTerminal();
 			break;
 		
-		case(TERMR):
+		case(TERMR): /*Sys 13*/
 			retValue = readTerminal();
 			break;
 		
-		default:
+		default: /*Case other than sys 9-13, treat as a program trap*/
 			programTrapHandler(exceptState);
 	}
+	/*Increment the pc, store the return value in v0, and return to the calling process*/
 	exceptState->s_v0 = retValue;
 	exceptState->s_pc += WORDLEN;
 	LDST(exceptState);
 }
 
 /*Terminates calling process and releases mutex if held*/
-void programTrapHandler(state_PTR exceptState) {
+void programTrapHandler() {
 	/*Check if holding mutex on something*/
-	
+	SYSCALL(VERHOGEN, &procSem, 0, 0);
 	/*terminate*/
 	SYSCALL (TERMPROCESS,0,0,0);
 }
@@ -64,7 +73,8 @@ void programTrapHandler(state_PTR exceptState) {
 /*User mode wrapper for the kernal mode exclusive SYS2*/
 void terminateUProc()
 {
-	SYSCALL (TERMPROCESS, 0, 0, 0);
+	/*Isomorphic to programTrapHandler, so this function simply calls that*/
+	programTrapHandler();
 }
 
 /*Returns current time of day*/

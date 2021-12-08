@@ -16,7 +16,7 @@
 #include "../h/const.h"
 extern void supGenExceptionHandler();
 extern void supSyscallHandler(state_PTR exceptState);
-extern void programTrapHandler(state_PTR exceptState);
+extern void programTrapHandler();
 extern void terminateUProc();
 extern unsigned int getTod();
 extern int writePrinter();
