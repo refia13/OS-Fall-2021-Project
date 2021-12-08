@@ -13,7 +13,7 @@
 static int i = 0; /*Static index for the swap pool. pick victim will increment this index % poolsize*/
 int pickVictim(); /*Helper method that selects a frame index from the swap pool, round robin algorithm*/
 static int swapSem = 1; /*Mutex Semaphore for the Swap Pool*/
-int flashIO(int readFlash, int asid, int frameNo); /*Helper method for flash IO, takes a parameter to determine whether to read or write*/
+int flashIO(int readFlash, int asid, int blockNo); /*Helper method for flash IO, takes a parameter to determine whether to read or write*/
 debugB(int a) {
 	return a;
 }
@@ -50,7 +50,6 @@ void tlbExceptionHandler() {
 	}
 	/*Read in page from backing store*/
 	retCode = flashIO(READ, (procsup->sup_asid), missingNo);
-	debugB(100);
 	setSTATUS(getSTATUS() & IECOFF);
 	frame->id = procsup->sup_asid;
 	frame->pageNo = missingNo;
@@ -90,7 +89,7 @@ int pickVictim() {
 }
 
 /*Flash memory io handler, chooses to read or write based on value in readFlash*/
-int flashIO(int readFlash, int asid, int frameNo) {
+int flashIO(int readFlash, int asid, int blockNo) {
 	/*Turn interrupts off*/
 	setSTATUS((getSTATUS() & IECOFF));
 	/*Determine device register*/
@@ -100,13 +99,13 @@ int flashIO(int readFlash, int asid, int frameNo) {
 	memaddr poolstartaddr = 0x20020000;
 	/*Write the starting physical address to data0 and write the command with a block number based on frameNo*/
 	int devIndex = ((FLASH - NONPERIPHERALDEV) * DEVPERLINE) + (asid-1);
-	devrega->devreg[devIndex].d_data0 = POOLSTARTADDR + (frameNo*PAGESIZE);
+	devrega->devreg[devIndex].d_data0 = POOLSTARTADDR + (blockNo*PAGESIZE);
 	if(readFlash) {
 		
-		devrega->devreg[devIndex].d_command = ((frameNo) << FRAMESHIFT) | READBLK;
+		devrega->devreg[devIndex].d_command = ((blockNo) << FRAMESHIFT) | READBLK;
 	}
 	else{
-		devrega->devreg[devIndex].d_command = ((frameNo) << FRAMESHIFT) | WRITEBLK;
+		devrega->devreg[devIndex].d_command = ((blockNo) << FRAMESHIFT) | WRITEBLK;
 	}
 	/*Block process until IO completes*/
 	return SYSCALL(WAITFORIO, FLASHINT, asid-1, 0);
